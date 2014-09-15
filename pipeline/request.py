@@ -19,6 +19,7 @@ def get_alpha2_code(ip):
         return 'XA'
     if res.traits.is_satellite_provider:
         return 'XS'
+    return 'XX'
 
 def get_alpha3_code(alpha2):
     country = pycountry.countries.get(alpha2=alpha2)
