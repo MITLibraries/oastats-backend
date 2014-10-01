@@ -26,6 +26,7 @@ parser.add_argument('--collection-summary',
                     default='summary')
 parser.add_argument('--num-threads', help='Number of threads to use', type=int,
                     default=25)
+parser.add_argument('--end-date', help="End date for Solr faceting")
 args = parser.parse_args()
 
 num_threads = args.num_threads
@@ -48,7 +49,7 @@ default_params = {
     "f.country.facet.limit": 250,
     "facet.range": "time",
     "facet.range.start": "2010-08-01T00:00:00Z",
-    "facet.range.end": "NOW",
+    "facet.range.end": args.end_date,
     "facet.range.gap": "+1DAY",
 }
 
