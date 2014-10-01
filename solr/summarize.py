@@ -26,6 +26,7 @@ parser.add_argument('--collection-summary',
                     default='summary')
 parser.add_argument('--num-threads', help='Number of threads to use', type=int,
                     default=25)
+parser.add_argument('--end-date', help="End date for Solr faceting")
 args = parser.parse_args()
 
 num_threads = args.num_threads
@@ -48,7 +49,7 @@ default_params = {
     "f.country.facet.limit": 250,
     "facet.range": "time",
     "facet.range.start": "2010-08-01T00:00:00Z",
-    "facet.range.end": "NOW",
+    "facet.range.end": args.end_date,
     "facet.range.gap": "+1DAY",
 }
 
@@ -64,7 +65,7 @@ def query_solr(query, params):
 def update(f):
     try:
         doc = f.result()
-        summary.insert(doc)
+        summary.update(doc['id'], doc['doc'], True)
     except Exception, e:
         logger.error(e)
 
@@ -79,12 +80,16 @@ def get_author(author):
     }
     res = query_solr(query, dict(default_params.items() + params.items()))
     doc = {
-        "_id": author,
-        "type": "author",
-        "size": res.grouped['handle']['ngroups'],
-        "downloads": res.grouped['handle']['matches'],
-        "countries": dictify(res.facets['facet_fields']['country'], "country"),
-        "dates": dictify(res.facets['facet_ranges']['time']['counts'], "date")
+        "id": { "_id": author },
+        "doc": {
+            "$set": {
+                "type": "author",
+                "size": res.grouped['handle']['ngroups'],
+                "downloads": res.grouped['handle']['matches'],
+                "countries": dictify(res.facets['facet_fields']['country'], "country"),
+                "dates": dictify(res.facets['facet_ranges']['time']['counts'], "date")
+            }
+        }
     }
     return doc
 
@@ -97,13 +102,17 @@ def get_handle(handle):
     res = query_solr(query, dict(default_params.items() + params.items()))
     req = res.docs[0]
     doc = {
-        "_id": handle,
-        "type": "handle",
-        "title": req['title'],
-        "downloads": res.hits,
-        "countries": dictify(res.facets['facet_fields']['country'], "country"),
-        "dates": dictify(res.facets['facet_ranges']['time']['counts'], "date"),
-        "parents": [authors.get(a) for a in req.get('author_id', [])]
+        "id": { "_id": handle },
+        "doc": {
+            "$set": {
+                "type": "handle",
+                "title": req['title'],
+                "downloads": res.hits,
+                "countries": dictify(res.facets['facet_fields']['country'], "country"),
+                "dates": dictify(res.facets['facet_ranges']['time']['counts'], "date"),
+                "parents": [authors.get(a) for a in req.get('author_id', [])]
+            }
+        }
     }
     return doc
 
@@ -118,12 +127,16 @@ def get_dlc(dlc):
     }
     res = query_solr(query, dict(default_params.items() + params.items()))
     doc = {
-        "_id": dlc,
-        "type": "dlc",
-        "size": res.grouped['handle']['ngroups'],
-        "downloads": res.grouped['handle']['matches'],
-        "countries": dictify(res.facets['facet_fields']['country'], "country"),
-        "dates": dictify(res.facets['facet_ranges']['time']['counts'], "date"),
+        "id": { "_id": dlc },
+        "doc": {
+            "$set": {
+                "type": "dlc",
+                "size": res.grouped['handle']['ngroups'],
+                "downloads": res.grouped['handle']['matches'],
+                "countries": dictify(res.facets['facet_fields']['country'], "country"),
+                "dates": dictify(res.facets['facet_ranges']['time']['counts'], "date"),
+            }
+        }
     }
     return doc
 
@@ -138,14 +151,15 @@ def get_summary():
     }
     res = query_solr(query, dict(default_params.items() + params.items()))
     doc = {
-        "_id": "Overall",
-        "type": "overall",
-        "size": res.grouped['handle']['ngroups'],
-        "downloads": res.grouped['handle']['matches'],
-        "countries": dictify(res.facets['facet_fields']['country'], "country"),
-        "dates": dictify(res.facets['facet_ranges']['time']['counts'], "date"),
+        "$set": {
+            "type": "overall",
+            "size": res.grouped['handle']['ngroups'],
+            "downloads": res.grouped['handle']['matches'],
+            "countries": dictify(res.facets['facet_fields']['country'], "country"),
+            "dates": dictify(res.facets['facet_ranges']['time']['counts'], "date"),
+        }
     }
-    summary.insert(doc)
+    summary.update({"_id": "Overall"}, doc, True)
 
 def main():
     get_summary()
