@@ -53,7 +53,8 @@ default_params = {
     "facet.range.gap": "+1DAY",
 }
 
-authors = dict([(int(d['mitid']), d) for d in requests.distinct("authors")])
+author_list = [a for a in requests.distinct("authors") if a['mitid']]
+authors = dict([(int(d['mitid']), d) for d in author_list])
 
 def dictify(counts, field):
     return [{field: f[:10], "downloads": i} for f,i in zip(counts[::2], counts[1::2])]
@@ -169,7 +170,7 @@ def main():
             job.add_done_callback(update)
 
     with futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-        for author in requests.distinct("authors"):
+        for author in author_list:
             job = executor.submit(get_author, author)
             job.add_done_callback(update)
 
