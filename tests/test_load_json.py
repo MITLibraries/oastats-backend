@@ -1,21 +1,27 @@
-from testing.utils import unittest
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 from mongobox import MongoBox
+import pytest
+
 from pipeline.load_json import get_collection, insert
 
-class TestLoadJSON(unittest.TestCase):
 
-    def setUp(self):
-        self.box = MongoBox()
-        self.box.start()
-        self.coll = get_collection('db1', 'coll1', ('localhost', self.box.port))
+@pytest.yield_fixture
+def mongo():
+    box = MongoBox()
+    box.start()
+    yield box
+    box.stop()
 
-    def test_get_collection_returns_mongo_collection(self):
-        self.assertEqual(self.coll.count(), 0)
 
-    def test_insert_adds_request_to_collection(self):
+class TestLoadJSON(object):
+    def test_get_collection_returns_mongo_collection(self, mongo):
+        coll = get_collection('db1', 'col1', ('localhost', mongo.port))
+        assert coll.count() == 0
+
+    def test_insert_adds_request_to_collection(self, mongo):
         req = {'Tumblesniff': 'Bogwort'}
-        insert(self.coll, req)
-        self.assertEqual(self.coll.find_one(), req)
-
-    def tearDown(self):
-        self.box.stop()
+        coll = get_collection('db1', 'col1', ('localhost', mongo.port))
+        insert(coll, req)
+        assert coll.find_one() == req

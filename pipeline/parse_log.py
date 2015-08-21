@@ -1,14 +1,14 @@
 from __future__ import print_function
 import sys
 import json
-import apachelog
+import apache_log_parser
 import logging
 import re
-from conf import settings
+from pipeline.conf import settings
 
 logger = logging.getLogger(__name__)
 
-parser = apachelog.parser(apachelog.formats['extended'])
+parser = apache_log_parser.make_parser("%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\"")
 
 mappings = settings.APACHE_FIELD_MAPPINGS
 handle_pattern = re.compile(r"/openaccess-disseminate/[0-9.]+/[0-9]+")
@@ -43,7 +43,7 @@ def field_mapper(request, mappings):
 
 def parse_line(line, parser):
     """Parse line from Apache log and return parsed request as dictionary."""
-    return parser.parse(line)
+    return parser(line)
 
 def default_writer(request):
     """Dummy writer returns request dictionary."""

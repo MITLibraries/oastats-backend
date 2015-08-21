@@ -4,12 +4,13 @@ import sys
 # Configure which fields from the Apache log will be retained and what field
 # they will be mapped to in the final JSON object.
 APACHE_FIELD_MAPPINGS = {
-    '%h': 'ip_address',
-    '%t': 'time',
-    '%r': 'request',
-    '%>s': 'status',
-    '%{Referer}i': 'referer',
-    '%{User-agent}i': 'user_agent',
+    'remote_host': 'ip_address',
+    'time_received': 'time',
+    'request_first_line': 'request',
+    'status': 'status',
+    'request_header_referer': 'referer',
+    'request_header_user_agent': 'user_agent',
+    'response_bytes_clf': 'filesize',
 }
 
 # Should be a tuple with either host and port, MongoDB URI, or empty

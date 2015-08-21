@@ -1,12 +1,13 @@
+sudo: false
+notifications:
+  email: false
 language: python
-python:
-  - "2.6"
-  - "2.7"
 env:
-  - OASTATS_SETTINGS=tests/fixtures/settings.py
+  - TOX_ENV=py27
+  - TOX_ENV=py33
+  - TOX_ENV=py34
+  - TOX_ENV=coveralls
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install importlib unittest2; fi
-  - pip install -r requirements.txt
-services:
-  - mongodb
-script: nosetests tests
+  - pip install tox
+script:
+  - tox -e $TOX_ENV

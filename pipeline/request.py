@@ -2,7 +2,7 @@ import geoip2.database
 from geoip2.errors import AddressNotFoundError
 import pycountry
 import arrow
-from conf import settings
+from pipeline.conf import settings
 from .decorators import memoize
 
 reader = geoip2.database.Reader(settings.GEOIP_DB)
