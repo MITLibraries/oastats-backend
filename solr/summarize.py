@@ -1,10 +1,14 @@
-import futures
-import pymongo
-import pysolr
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
 import logging
 import sys
 import argparse
+
+import futures
+import pymongo
+import pysolr
 import requests
+
 
 parser = argparse.ArgumentParser(description="Generate Mongo summary collection from Solr")
 parser.add_argument('--solr', help='Solr instance URL', required=True)
@@ -56,12 +60,15 @@ default_params = {
 author_list = [a for a in requests.distinct("authors") if a['mitid']]
 authors = dict([(int(d['mitid']), d) for d in author_list])
 
+
 def dictify(counts, field):
-    return [{field: f[:10], "downloads": i} for f,i in zip(counts[::2], counts[1::2])]
+    return [{field: f[:10], "downloads": i} for f, i in zip(counts[::2], counts[1::2])]
+
 
 def query_solr(query, params):
     results = solr.search(query, **params)
     return results
+
 
 def update(f):
     try:
@@ -69,6 +76,7 @@ def update(f):
         summary.update(doc['id'], doc['doc'], True)
     except Exception, e:
         logger.error(e)
+
 
 def get_author(author):
     query = 'author_id:"{0}"'.format(author['mitid'])
@@ -81,7 +89,7 @@ def get_author(author):
     }
     res = query_solr(query, dict(default_params.items() + params.items()))
     doc = {
-        "id": { "_id": author },
+        "id": {"_id": author},
         "doc": {
             "$set": {
                 "type": "author",
@@ -94,6 +102,7 @@ def get_author(author):
     }
     return doc
 
+
 def get_handle(handle):
     query = 'handle:"{0}"'.format(handle)
     params = {
@@ -103,7 +112,7 @@ def get_handle(handle):
     res = query_solr(query, dict(default_params.items() + params.items()))
     req = res.docs[0]
     doc = {
-        "id": { "_id": handle },
+        "id": {"_id": handle},
         "doc": {
             "$set": {
                 "type": "handle",
@@ -117,6 +126,7 @@ def get_handle(handle):
     }
     return doc
 
+
 def get_dlc(dlc):
     query = 'dlc_canonical:"{0}"'.format(dlc['canonical'])
     params = {
@@ -128,7 +138,7 @@ def get_dlc(dlc):
     }
     res = query_solr(query, dict(default_params.items() + params.items()))
     doc = {
-        "id": { "_id": dlc },
+        "id": {"_id": dlc},
         "doc": {
             "$set": {
                 "type": "dlc",
@@ -140,6 +150,7 @@ def get_dlc(dlc):
         }
     }
     return doc
+
 
 def get_summary():
     query = "*"
@@ -161,6 +172,7 @@ def get_summary():
         }
     }
     summary.update({"_id": "Overall"}, doc, True)
+
 
 def main():
     get_summary()

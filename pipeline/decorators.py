@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 
 def memoize(f):
     """Memoize a function that takes one argument."""

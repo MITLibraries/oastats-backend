@@ -1,10 +1,13 @@
-from __future__ import print_function
-import sys
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
 import json
-import apache_log_parser
 import logging
 import re
+
+import apache_log_parser
+
 from pipeline.conf import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +16,11 @@ parser = apache_log_parser.make_parser("%h %l %u %t \"%r\" %>s %b \"%{Referer}i\
 mappings = settings.APACHE_FIELD_MAPPINGS
 handle_pattern = re.compile(r"/openaccess-disseminate/[0-9.]+/[0-9]+")
 
-bots_startswith = ("Java","Python","libwww","lwp-trivial","htdig","Xenu","TinEye","yacy","PycURL","LinkWalker","Ocelli")
+bots_startswith = ("Java", "Python", "libwww", "lwp-trivial", "htdig", "Xenu",
+                   "TinEye", "yacy", "PycURL", "LinkWalker", "Ocelli")
 bots_pattern = re.compile(r"bot|crawler|spider|findlinks|feedfetcher|slurp|sensis|jeeves|nutch|harvest|larbin|archiver|ichiro|scrubby|silk|referee|webcollage|store",
                           re.IGNORECASE)
+
 
 def record_filter(record):
     """Return the record if it matches certain filters, otherwise None."""
@@ -33,26 +38,31 @@ def record_filter(record):
         return None
     return record
 
+
 def field_mapper(request, mappings):
     """Map fields from input request dict to new dict based on mappings."""
     new_f = {}
-    for k,v in request.items():
+    for k, v in request.items():
         if k in mappings:
             new_f[mappings[k]] = v
     return new_f
+
 
 def parse_line(line, parser):
     """Parse line from Apache log and return parsed request as dictionary."""
     return parser(line)
 
+
 def default_writer(request):
     """Dummy writer returns request dictionary."""
     return request
+
 
 def json_writer(request):
     """Print request dictionary as JSON string."""
     if request:
         print(json.dumps(request))
+
 
 def parse(line, writer=default_writer):
     """Parse a line from an Apache log file.

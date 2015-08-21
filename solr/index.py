@@ -1,7 +1,10 @@
-import pysolr
-import pymongo
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
 from operator import itemgetter
 import argparse
+
+import pysolr
+import pymongo
 
 
 def index(**kwargs):
@@ -33,9 +36,10 @@ def index(**kwargs):
 
     solr.commit()
 
+
 def main():
     parser = argparse.ArgumentParser(description="Index Mongo collection in Solr")
-    parser.add_argument('-s' , '--solr', help='Solr instance URL', required=True)
+    parser.add_argument('-s', '--solr', help='Solr instance URL', required=True)
     parser.add_argument('-m', '--mongohost', help='Mongo host or MongoDB URI')
     parser.add_argument('-d', '--database', default='oastats')
     parser.add_argument('-c', '--collection', default='requests')
