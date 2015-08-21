@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 from pymongo import MongoClient
+
 
 def get_collection(db, collection, conn):
     """Return specified MongoDB collection.
@@ -9,6 +13,7 @@ def get_collection(db, collection, conn):
     """
     client = MongoClient(*conn)
     return client[db][collection]
+
 
 def insert(collection, request):
     """Insert a request dictionary into the specified MongoDB collection."""

@@ -1,4 +1,5 @@
-from __future__ import print_function
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
 import json
 import sys
 import csv
@@ -13,10 +14,11 @@ def load_identities(fp):
     sdata = sorted(data, key=itemgetter('URI'))
     return groupby(sdata, itemgetter('URI'))
 
+
 def main(filename):
     with open(filename, 'rbU') as fp:
         for handle, identities in load_identities(fp):
-            record = { 'handle': handle, 'ids': [] }
+            record = {'handle': handle, 'ids': []}
             for identity in identities:
                 record['ids'].append({
                     'name': identity['Author'],

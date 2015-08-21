@@ -1,11 +1,17 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 import geoip2.database
 from geoip2.errors import AddressNotFoundError
 import pycountry
 import arrow
+
 from pipeline.conf import settings
-from .decorators import memoize
+from pipeline.decorators import memoize
+
 
 reader = geoip2.database.Reader(settings.GEOIP_DB)
+
 
 @memoize
 def get_alpha2_code(ip):
@@ -21,9 +27,11 @@ def get_alpha2_code(ip):
         return 'XS'
     return 'XX'
 
+
 def get_alpha3_code(alpha2):
     country = pycountry.countries.get(alpha2=alpha2)
     return country.alpha3
+
 
 def add_country(request):
     """Add ISO 3166-1 alpha-3 code to country field of request dict."""
@@ -36,11 +44,13 @@ def add_country(request):
         request['country'] = alpha3
     return request
 
+
 def str_to_dt(request):
     """Convert Apache timestamp to datetime object."""
     t = arrow.get(request['time'], '[DD/MMM/YYYY:HH:mm:ss Z]')
     request['time'] = t.datetime
     return request
+
 
 def req_to_url(request):
     """Convert Apache request string to URL."""
