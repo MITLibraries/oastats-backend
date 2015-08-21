@@ -1,3 +1,2 @@
 -r requirements.txt
-importlib
-argparse
+ipaddr==2.1.11
