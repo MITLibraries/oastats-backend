@@ -6,14 +6,11 @@ import re
 
 import apache_log_parser
 
-from pipeline.conf import settings
-
 
 logger = logging.getLogger(__name__)
 
 parser = apache_log_parser.make_parser("%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\"")
 
-mappings = settings.APACHE_FIELD_MAPPINGS
 handle_pattern = re.compile(r"/openaccess-disseminate/[0-9.]+/[0-9]+")
 
 bots_startswith = ("Java", "Python", "libwww", "lwp-trivial", "htdig", "Xenu",
@@ -64,7 +61,7 @@ def json_writer(request):
         print(json.dumps(request))
 
 
-def parse(line, writer=default_writer):
+def parse(line, mappings, writer=default_writer):
     """Parse a line from an Apache log file.
 
     This function will parse the request into a dictionary, map the dictionary's
