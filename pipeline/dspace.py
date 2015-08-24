@@ -4,15 +4,14 @@ from __future__ import absolute_import
 import re
 import requests
 
-from pipeline.conf import settings
 from pipeline.decorators import memoize
 
 
 handle_pattern = re.compile(r"/openaccess-disseminate/(?P<handle>[0-9.]+/[0-9]+)")
 
 
-def fetch_metadata(request):
-    data = _make_request(get_handle(request.get("request")))
+def fetch_metadata(request, id_svc):
+    data = _make_request(get_handle(request.get("request")), id_svc)
     if not data.get('success'):
         return False
     request['dlcs'] = list(filter(None, data.get("departments", [])))
@@ -30,8 +29,7 @@ def get_handle(req_string):
 
 
 @memoize
-def _make_request(handle):
-    r = requests.get(settings.DSPACE_IDENTITY_SERVICE,
-                     params={'handle': handle})
+def _make_request(handle, svc):
+    r = requests.get(svc, params={'handle': handle})
     r.raise_for_status()
     return r.json()

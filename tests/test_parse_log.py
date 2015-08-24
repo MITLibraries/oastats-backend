@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 
 import pytest
-import arrow
 
 from pipeline.parse_log import (parse_line, parser, field_mapper, parse,
                                 record_filter,)
@@ -39,8 +38,9 @@ class TestLogParser(object):
         request = field_mapper({'status': 'GIMME'}, {'remote_host': 'ip_address'})
         assert 'status' not in request
 
-    def test_parse_returns_a_mapped_request(self, log_entry, parsed_request):
-        request = parse(log_entry)
+    def test_parse_returns_a_mapped_request(self, log_entry, parsed_request,
+                                            field_map):
+        request = parse(log_entry, mappings=field_map)
         assert request == parsed_request
 
     def test_filter_drops_non_200_requests(self, parsed_request):

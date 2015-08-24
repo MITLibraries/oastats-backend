@@ -38,7 +38,7 @@ def main():
 
     for line in fileinput.input():
         try:
-            request = process(line)
+            request = process(line, settings)
         except apachelog.ApacheLogParserError:
             # log unparseable requests
             req_log.error(line.strip(), extra={'err_type': 'REQUEST_ERROR'})

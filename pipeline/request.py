@@ -6,17 +6,18 @@ from geoip2.errors import AddressNotFoundError
 import pycountry
 import arrow
 
-from pipeline.conf import settings
 from pipeline.decorators import memoize
 
 
-reader = geoip2.database.Reader(settings.GEOIP_DB)
+@memoize
+def reader(database):
+    return geoip2.database.Reader(database)
 
 
 @memoize
-def get_alpha2_code(ip):
+def get_alpha2_code(ip, database):
     try:
-        res = reader.country(ip)
+        res = reader(database).country(ip)
     except AddressNotFoundError:
         return 'XX'
     if res.country.iso_code is not None:
@@ -33,10 +34,10 @@ def get_alpha3_code(alpha2):
     return country.alpha3
 
 
-def add_country(request):
+def add_country(request, database):
     """Add ISO 3166-1 alpha-3 code to country field of request dict."""
     ip = request.get('ip_address')
-    alpha2 = get_alpha2_code(ip)
+    alpha2 = get_alpha2_code(ip, database)
     if alpha2 in ('XA', 'XS', 'XX'):
         request['country'] = 'XXX'
     else:

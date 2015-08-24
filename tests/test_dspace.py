@@ -42,18 +42,24 @@ class TestDSpace(object):
         req_string = "http://www.example.com/foo/openaccess-disseminate/1.2/3"
         assert dspace.get_handle(req_string) == "1.2/3"
 
-    def test_fetch_metadata_sets_properties(self, requests, dspace_response):
+    def test_fetch_metadata_sets_properties(self, requests, dspace_response,
+                                            id_svc):
         requests.get.return_value = dspace_response
-        req = dspace.fetch_metadata({'request': '/openaccess-disseminate/1.2.3/4'})
+        req = dspace.fetch_metadata({'request': '/openaccess-disseminate/1.2.3/4'},
+                                    id_svc)
         assert req['dlcs'] == [{"canonical": "Hay There", "display": "Wut"}]
         assert req['handle'] == "Meadowcup"
         assert req['title'] == "50 Shades of Hay"
 
-    def test_fetch_metadata_throws_exception_on_error(self, requests):
+    def test_fetch_metadata_throws_exception_on_error(self, requests, id_svc):
         requests.get.return_value = Mock(**{'raise_for_status.side_effect': HTTPError})
         with pytest.raises(HTTPError):
-            dspace.fetch_metadata({'request': '/openaccess-disseminate/1.2/4'})
+            dspace.fetch_metadata({'request': '/openaccess-disseminate/1.2/4'},
+                                  id_svc)
 
-    def test_fetch_metadata_returns_false_on_no_success(self, requests, failure_response):
+    def test_fetch_metadata_returns_false_on_no_success(self, requests, id_svc,
+                                                        failure_response):
         requests.get.return_value = failure_response
-        assert dspace.fetch_metadata({'request': '/openaccess-disseminate/1.2.3/5'}) is False
+        r = dspace.fetch_metadata({'request': '/openaccess-disseminate/1.2.3/5'},
+                                  id_svc)
+        assert r is False
