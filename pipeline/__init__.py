@@ -8,10 +8,10 @@ from pipeline.dspace import fetch_metadata
 
 def process(request, config):
     """Process an Apache log request with the pipeline and return a dictionary."""
-    req = parse(request, mappings=config.APACHE_FIELD_MAPPINGS)
+    req = parse(request, mappings=config['APACHE_FIELD_MAPPINGS'])
     if req is not None:
         req = str_to_dt(req)
-        req = add_country(req, config.GEOIP_DB)
+        req = add_country(req, config['GEOIP_DB'])
         req = req_to_url(req)
-        req = fetch_metadata(req, config.DSPACE_IDENTITY_SERVICE)
+        req = fetch_metadata(req, config['DSPACE_IDENTITY_SERVICE'])
     return req
