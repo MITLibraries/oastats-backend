@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import json
-import logging
 import re
 
 import apache_log_parser
 
-
-logger = logging.getLogger(__name__)
 
 parser = apache_log_parser.make_parser("%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\"")
 

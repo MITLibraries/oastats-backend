@@ -1,3 +1,4 @@
+PyYAML==3.11
 apache-log-parser==1.7.0
 arrow==0.4.2
 click==5.1

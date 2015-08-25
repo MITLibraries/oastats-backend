@@ -1,0 +1,36 @@
+MONGO_CONNECTION:
+  - localhost
+  - 27017
+MONGO_DB: oastats
+MONGO_COLLECTION: requests
+GEOIP_DB: tests/fixtures/GeoLite2-Country.mmdb
+DSPACE_IDENTITY_SERVICE: 'http://dspace-dev.mit.edu/ws/oastats'
+APACHE_FIELD_MAPPINGS:
+  '%h': 'ip_address'
+  '%t': 'time'
+  '%r': 'request'
+  '%>s': 'status'
+  '%{Referer}i': 'referer'
+  '%{User-agent}i': 'user_agent'
+  '%b': 'filesize'
+LOGGING:
+  version: 1
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: INFO
+      stream: ext://sys.stdout
+    file:
+      class: logging.FileHandler
+      level: ERROR
+      filename: 'pipeline.log'
+      formatter: full
+  loggers:
+    pipeline:
+      handlers: [console]
+    pipeline.requests:
+      handlers: [file]
+      propagate: false
+  formatters:
+    full:
+      format: '%(asctime)s %(err_type)s: %(msg)s'
