@@ -14,11 +14,11 @@ from pipeline.load_json import get_collection, insert
 
 
 @click.group()
-def cli():
+def main():
     pass
 
 
-@cli.command()
+@main.command()
 @click.option('--config', envvar='OASTATS_SETTINGS')
 def pipeline(config):
     with open(config) as fp:
@@ -55,4 +55,4 @@ def pipeline(config):
 
 
 if __name__ == '__main__':
-    cli()
+    main()
