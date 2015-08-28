@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import os
 
 import pytest
+from mongobox import MongoBox
 
 
 @pytest.fixture
@@ -27,3 +28,17 @@ def field_map():
         'request_header_user_agent': 'user_agent',
         'response_bytes_clf': 'filesize',
     }
+
+
+@pytest.fixture
+def cfg():
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(current_dir, 'fixtures/test-config.yml')
+
+
+@pytest.yield_fixture
+def mongo():
+    box = MongoBox()
+    box.start()
+    yield box
+    box.stop()

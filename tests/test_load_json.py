@@ -1,18 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-from mongobox import MongoBox
-import pytest
-
 from pipeline.load_json import get_collection, insert
-
-
-@pytest.yield_fixture
-def mongo():
-    box = MongoBox()
-    box.start()
-    yield box
-    box.stop()
 
 
 class TestLoadJSON(object):

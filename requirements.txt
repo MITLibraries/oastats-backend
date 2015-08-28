@@ -6,7 +6,7 @@ futures==2.1.6
 geoip2==0.5.0
 maxminddb==0.3.1
 pycountry==1.8
-pymongo==2.6.3
+pymongo==3.0.3
 pysolr==3.2.0
 python-dateutil==2.2
 requests==2.2.1
