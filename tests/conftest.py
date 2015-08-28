@@ -4,6 +4,7 @@ import os
 
 import pytest
 from mongobox import MongoBox
+from mock import patch
 
 
 @pytest.fixture
@@ -42,3 +43,10 @@ def mongo():
     box.start()
     yield box
     box.stop()
+
+
+@pytest.yield_fixture
+def solr_add():
+    patcher = patch('pysolr.Solr.add')
+    yield patcher.start()
+    patcher.stop()
