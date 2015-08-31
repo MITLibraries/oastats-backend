@@ -46,7 +46,7 @@ def mongo():
 
 
 @pytest.yield_fixture
-def solr_add():
-    patcher = patch('pysolr.Solr.add')
+def solr():
+    patcher = patch('pysolr.Solr')
     yield patcher.start()
     patcher.stop()

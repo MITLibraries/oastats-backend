@@ -6,8 +6,10 @@ import logging.config
 
 import yaml
 import click
+from pymongo import MongoClient
 
 from pipeline.pipeline import run
+from pipeline.summary import index as idx
 
 
 @click.group()
@@ -29,6 +31,18 @@ def pipeline(config, logfiles):
     run(fileinput.input(logfiles), **cfg)
 
     log.info("{0} requests processed".format(fileinput.lineno()))
+
+
+@main.command()
+@click.argument('solr')
+@click.option('--mongo', default='mongo://localhost:27017')
+@click.option('--mongo-db', default='oastats')
+@click.option('--mongo-collection', default='requests')
+def index(solr, mongo, mongo_db, mongo_collection):
+    client = MongoClient(mongo)
+    collection = client[mongo_db][mongo_collection]
+    requests = collection.find()
+    idx(requests, solr)
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import pytest
+from mock import Mock
 
 from pipeline.request_writer import (buffered, BufferedMongoWriter,
                                      BufferedSolrWriter,)
@@ -29,6 +30,13 @@ def test_buffered_function_flushes_when_called_without_args(f):
     assert fn(None) == [1]
 
 
+def test_buffered_does_not_write_empty_list():
+    m = Mock()
+    fn = buffered(10)(m)
+    fn(None)
+    assert not m.called
+
+
 def test_mongo_writer_adds_requests(mongo):
     m = BufferedMongoWriter('foo', 'bar', ['localhost', mongo.port])
     m.write({'foo': 'bar'})
@@ -42,14 +50,20 @@ def test_mongo_writer_flushes_on_exit(mongo):
     assert m.collection.count({'foo': 'gaz'}) == 1
 
 
-def test_solr_writer_adds_request(solr_add):
+def test_solr_writer_adds_request(solr):
     s = BufferedSolrWriter('http://example.com')
     s.write({'foo': 'bar'})
     s.write()
-    solr_add.assert_called_once_with([{'foo': 'bar'}])
+    solr().add.assert_called_once_with([{'foo': 'bar'}], commit=False)
 
 
-def test_solr_writer_flushes_on_exit(solr_add):
+def test_solr_writer_flushes_on_exit(solr):
     with BufferedSolrWriter('http://example.com') as s:
         s.write({'foo': 'bar'})
-    solr_add.assert_called_once_with([{'foo': 'bar'}])
+    solr().add.assert_called_once_with([{'foo': 'bar'}], commit=False)
+
+
+def test_solr_writer_commits_on_exit(solr):
+    with BufferedSolrWriter('http://example.com') as s:
+        s.write({'foo': 'bar'})
+    assert solr().commit.call_count == 1
