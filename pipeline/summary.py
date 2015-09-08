@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from operator import itemgetter
+from functools import partial
+try:
+    import itertools.ifilter as filter
+except ImportError:
+    pass
+
+import futures
 
 from pipeline.request_writer import BufferedSolrWriter
 
@@ -23,3 +30,117 @@ def index(requests, solr_url):
                                         request.get('authors', []))),
             }
             solr.write(doc)
+
+
+def summarize(requests, summary, solr):
+    with futures.ThreadPoolExecutor(max_workers=5) as executor:
+        for author in authors(requests):
+            job = executor.submit(query_solr, solr, *get_author(author))
+            callback = partial(update, summary, {'_id': author}, create_author)
+            job.add_done_callback(callback)
+        for dlc in requests.distinct("dlcs"):
+            job = executor.submit(query_solr, solr, *get_dlc(dlc))
+            callback = partial(update, summary, {'_id': dlc}, create_dlc)
+            job.add_done_callback(callback)
+
+
+def update(summary, ident, formatter, result):
+    query = formatter(result)
+    summary.update_one(ident, query, True)
+
+
+def authors(requests):
+    return filter(lambda x: x.get('mitid'), requests.distinct('authors'))
+
+
+def query_solr(solr, query, params):
+    default_params = {
+        "facet": 'true',
+        "facet.field": "country",
+        "f.country.facet.limit": 250,
+        "facet.range": "time",
+        "facet.range.start": "2010-08-01T00:00:00Z",
+        # "facet.range.end": args.end_date,
+        "facet.range.gap": "+1DAY",
+    }
+    kwargs = dict(default_params.items() + params.items())
+    return solr.search(query, **kwargs)
+
+
+def get_author(author):
+    query = 'author_id:"{0}"'.format(author['mitid'])
+    params = {
+        "rows": 0,
+        "wt": "json",
+        "group": "true",
+        "group.field": "handle",
+        "group.ngroups": "true",
+    }
+    return query, params
+
+
+def create_author(result):
+    return {
+        "$set": {
+            "type": "author",
+            "size": result.grouped['handle']['ngroups'],
+            "downloads": result.grouped['handle']['matches'],
+            "countries": dictify('country',
+                                 result.facets['facet_fields']['country']),
+            "dates": dictify('date',
+                             result.facets['facet_ranges']['time']['counts'])
+        }
+    }
+
+
+def get_dlc(dlc):
+    query = 'dlc_canonical:"{0}"'.format(dlc['canonical'])
+    params = {
+        "rows": 0,
+        "wt": "json",
+        "group": "true",
+        "group.field": "handle",
+        "group.ngroups": "true",
+    }
+    return query, params
+
+
+def create_dlc(result):
+    return {
+        "$set": {
+            "type": "dlc",
+            "size": result.grouped['handle']['ngroups'],
+            "downloads": result.grouped['handle']['matches'],
+            "countries": dictify('country',
+                                 result.facets['facet_fields']['country']),
+            "dates": dictify('date',
+                             result.facets['facet_ranges']['time']['counts'])
+        }
+    }
+
+
+def dictify(field, counts):
+    """Turn Solr facet counts into compound Mongo field.
+
+    This is used to turn the country and date facet counts into the format
+    required for the Mongo summary collection. For example::
+
+        [{
+            'country': 'USA',
+            'downloads': 100
+        }, {
+            'country': 'FRA',
+            'downloads': 51
+        }]
+
+    Dates are current treated as a string, so only the first 10 characters
+    of the date are taken (YYYY-MM-DD), rather than converting to a datetime
+    object.
+
+    :param field: field being summarized--either `country` or `date`
+    :param counts: list of Solr facet counts in format `[facet, count, ...]`
+    """
+
+    return [
+        {field: f[:10], "downloads": i} for f, i in zip(counts[::2], counts[1::2])
+    ]
