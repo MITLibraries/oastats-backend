@@ -14,9 +14,10 @@ def buffered(maxsize=1):
                 buffered_list.append(request)
                 if len(buffered_list) < maxsize:
                     return
-            res = f(self, list(buffered_list))
-            del buffered_list[:]
-            return res
+            if buffered_list:
+                res = f(self, list(buffered_list))
+                del buffered_list[:]
+                return res
         return wrapper
     return buffered_deco
 
@@ -46,7 +47,8 @@ class BufferedSolrWriter(object):
 
     def __exit__(self, type, value, traceback):
         self.write()
+        self.solr.commit()
 
     @buffered(maxsize=10000)
     def write(self, request=None):
-        self.solr.add(request)
+        self.solr.add(request, commit=False)
