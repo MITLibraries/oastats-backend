@@ -2,12 +2,12 @@
 from __future__ import absolute_import
 from operator import itemgetter
 from functools import partial
+from concurrent import futures
 try:
     import itertools.ifilter as filter
 except ImportError:
     pass
 
-import futures
 import pysolr
 
 from pipeline.request_writer import BufferedSolrWriter
