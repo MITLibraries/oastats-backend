@@ -42,6 +42,10 @@ def summarize(requests, summary, solr):
             job = executor.submit(query_solr, solr, *get_dlc(dlc))
             callback = partial(update, summary, {'_id': dlc}, create_dlc)
             job.add_done_callback(callback)
+        for handle in requests.distinct("handle"):
+            job = executor.submit(query_solr, solr, *get_handle(handle))
+            callback = partial(update, summary, {'_id': handle}, create_handle)
+            job.add_done_callback(callback)
 
 
 def update(summary, ident, formatter, result):
@@ -71,7 +75,6 @@ def get_author(author):
     query = 'author_id:"{0}"'.format(author['mitid'])
     params = {
         "rows": 0,
-        "wt": "json",
         "group": "true",
         "group.field": "handle",
         "group.ngroups": "true",
@@ -97,7 +100,6 @@ def get_dlc(dlc):
     query = 'dlc_canonical:"{0}"'.format(dlc['canonical'])
     params = {
         "rows": 0,
-        "wt": "json",
         "group": "true",
         "group.field": "handle",
         "group.ngroups": "true",
@@ -115,6 +117,28 @@ def create_dlc(result):
                                  result.facets['facet_fields']['country']),
             "dates": dictify('date',
                              result.facets['facet_ranges']['time']['counts'])
+        }
+    }
+
+
+def get_handle(handle):
+    query = 'handle:"{0}"'.format(handle)
+    params = {"rows": 1}
+    return query, params
+
+
+def create_handle(result):
+    hdl = result.docs[0]
+    return {
+        '$set': {
+            'type': 'handle',
+            'title': hdl['title'],
+            'downloads': result.grouped['handle']['matches'],
+            'countries': dictify('country',
+                                 result.facets['facet_fields']['country']),
+            'dates': dictify('date',
+                             result.facets['facet_ranges']['time']['counts']),
+            'parents': list(map(split_author, hdl.get('author', [])))
         }
     }
 
@@ -144,3 +168,12 @@ def dictify(field, counts):
     return [
         {field: f[:10], "downloads": i} for f, i in zip(counts[::2], counts[1::2])
     ]
+
+
+def split_author(author):
+    try:
+        mitid, name = author.split(':', 1)
+    except ValueError:
+        return
+    if mitid and name:
+        return {'mitid': int(mitid), 'name': name}

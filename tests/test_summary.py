@@ -90,7 +90,7 @@ def test_authors_filters_out_authors_with_empty_mitid(mongo):
 
 def test_get_author_returns_solr_query():
     assert get_author({'mitid': 1234, 'name': 'Fluffy'}) == \
-        ('author_id:"1234"', {'rows': 0, 'wt': 'json', 'group': 'true',
+        ('author_id:"1234"', {'rows': 0, 'group': 'true',
                               'group.field': 'handle', 'group.ngroups': 'true'})
 
 
@@ -110,7 +110,7 @@ def test_create_author_creates_mongo_insert(solr_result):
 
 def test_get_dlc_returns_solr_query():
     assert get_dlc({'canonical': 'Dept of Things', 'display': 'Things'}) == \
-        ('dlc_canonical:"Dept of Things"', {'rows': 0, 'wt': 'json', 'group': 'true',
+        ('dlc_canonical:"Dept of Things"', {'rows': 0, 'group': 'true',
                                             'group.field': 'handle',
                                             'group.ngroups': 'true'})
 
@@ -129,7 +129,39 @@ def test_create_dlc_creates_mongo_insert(solr_result):
     }
 
 
+def test_get_handle_returns_solr_query():
+    assert get_handle('http://example.com/foo') == \
+        ('handle:"http://example.com/foo"', {'rows': 1})
+
+
+def test_create_handle_creates_mongo_insert(solr_result):
+    solr_result.docs = [{'title': 'The Effects of Foo on Bar',
+                         'author': ['1234:Fluffy', '5678:Captain Snuggles']}]
+    assert create_handle(solr_result) == {
+        '$set': {
+            'type': 'handle',
+            'title': 'The Effects of Foo on Bar',
+            'downloads': 10,
+            'countries': [{'country': 'USA', 'downloads': 10},
+                          {'country': 'ISL', 'downloads': 4}],
+            'dates': [{'date': '2015-01-01', 'downloads': 3},
+                      {'date': '2015-02-01', 'downloads': 5}],
+            'parents': [{'mitid': 1234, 'name': 'Fluffy'},
+                        {'mitid': 5678, 'name': 'Captain Snuggles'}]
+        }
+    }
+
+
 def test_dictify_converts_facet_count_to_dictionary():
     assert dictify("foo", ['FOO', 1, 'BAR', 2, 'BAZ', 3]) == [
         {'foo': 'FOO', 'downloads': 1}, {'foo': 'BAR', 'downloads': 2},
         {'foo': 'BAZ', 'downloads': 3}]
+
+
+def test_split_author_turns_string_into_compound_field():
+    assert split_author('1234:Foo Bar') == {'mitid': 1234, 'name': 'Foo Bar'}
+
+
+def test_split_author_returns_none_for_invalid_author():
+    assert split_author(':Foo Bar') is None
+    assert split_author('Foo Bar') is None
