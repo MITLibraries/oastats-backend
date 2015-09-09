@@ -32,8 +32,8 @@ def index(requests, solr_url):
             solr.write(doc)
 
 
-def summarize(requests, summary, solr):
-    with futures.ThreadPoolExecutor(max_workers=5) as executor:
+def summarize(requests, summary, solr, max_workers):
+    with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         job = executor.submit(query_solr, solr, *get_overall())
         callback = partial(update, summary, {'_id': 'Overall'}, create_overall)
         job.add_done_callback(callback)

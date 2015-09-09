@@ -9,7 +9,7 @@ import click
 from pymongo import MongoClient
 
 from pipeline.pipeline import run
-from pipeline.summary import index as idx
+from pipeline.summary import index as idx, summarize
 
 
 @click.group()
@@ -35,7 +35,7 @@ def pipeline(config, logfiles):
 
 @main.command()
 @click.argument('solr')
-@click.option('--mongo', default='mongo://localhost:27017')
+@click.option('--mongo', default='mongodb://localhost:27017')
 @click.option('--mongo-db', default='oastats')
 @click.option('--mongo-collection', default='requests')
 def index(solr, mongo, mongo_db, mongo_collection):
@@ -43,6 +43,22 @@ def index(solr, mongo, mongo_db, mongo_collection):
     collection = client[mongo_db][mongo_collection]
     requests = collection.find()
     idx(requests, solr)
+
+
+@main.command()
+@click.argument('solr')
+@click.option('--mongo', default='mongodb://localhost:27017')
+@click.option('--mongo-req-db', default='oastats')
+@click.option('--mongo-req-collection', default='requests')
+@click.option('--mongo-sum-db', default='oastats')
+@click.option('--mongo-sum-collection', default='summary')
+@click.option('--max-workers', default=1, type=click.INT)
+def summary(solr, mongo, mongo_req_db, mongo_req_collection, mongo_sum_db,
+            mongo_sum_collection, max_workers):
+    client = MongoClient(mongo)
+    requests = client[mongo_req_db][mongo_req_collection]
+    summary = client[mongo_sum_db][mongo_sum_collection]
+    summarize(requests, summary, solr, max_workers)
 
 
 if __name__ == '__main__':

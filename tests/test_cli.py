@@ -46,3 +46,12 @@ def test_index_adds_request(runner, mongo):
                       'mongodb://localhost:%d' % mongo.port])
         assert mock.call_args[0][0].count() == 2  # Mongo cursor
         assert mock.call_args[0][1] == 'http://example.com/solr'
+
+
+def test_summary_summarizes_collection(runner, mongo):
+    with patch('pipeline.cli.summarize') as mock:
+        runner.invoke(main, ['summary', 'http://example.com/solr', '--mongo',
+                      'mongodb://localhost:%d' % mongo.port])
+        mock.assert_called_with(mongo.client().oastats.requests,
+                                mongo.client().oastats.summary,
+                                'http://example.com/solr', 1)
