@@ -152,6 +152,26 @@ def test_create_handle_creates_mongo_insert(solr_result):
     }
 
 
+def test_get_overall_returns_solr_query():
+    assert get_overall() == ('*', {'rows': 0, 'group': 'true',
+                                   'group.field': 'handle',
+                                   'group.ngroups': 'true'})
+
+
+def test_create_overall_creates_mongo_insert(solr_result):
+    assert create_overall(solr_result) == {
+        '$set': {
+            'type': 'overall',
+            'size': 2,
+            'downloads': 10,
+            'countries': [{'country': 'USA', 'downloads': 10},
+                          {'country': 'ISL', 'downloads': 4}],
+            'dates': [{'date': '2015-01-01', 'downloads': 3},
+                      {'date': '2015-02-01', 'downloads': 5}]
+        }
+    }
+
+
 def test_dictify_converts_facet_count_to_dictionary():
     assert dictify("foo", ['FOO', 1, 'BAR', 2, 'BAZ', 3]) == [
         {'foo': 'FOO', 'downloads': 1}, {'foo': 'BAR', 'downloads': 2},

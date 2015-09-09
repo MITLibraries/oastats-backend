@@ -34,6 +34,9 @@ def index(requests, solr_url):
 
 def summarize(requests, summary, solr):
     with futures.ThreadPoolExecutor(max_workers=5) as executor:
+        job = executor.submit(query_solr, solr, *get_overall())
+        callback = partial(update, summary, {'_id': 'Overall'}, create_overall)
+        job.add_done_callback(callback)
         for author in authors(requests):
             job = executor.submit(query_solr, solr, *get_author(author))
             callback = partial(update, summary, {'_id': author}, create_author)
@@ -139,6 +142,30 @@ def create_handle(result):
             'dates': dictify('date',
                              result.facets['facet_ranges']['time']['counts']),
             'parents': list(map(split_author, hdl.get('author', [])))
+        }
+    }
+
+
+def get_overall():
+    params = {
+        "rows": 0,
+        "group": "true",
+        "group.field": "handle",
+        "group.ngroups": "true",
+    }
+    return '*', params
+
+
+def create_overall(result):
+    return {
+        '$set': {
+            'type': 'overall',
+            'size': result.grouped['handle']['ngroups'],
+            'downloads': result.grouped['handle']['matches'],
+            'countries': dictify('country',
+                                 result.facets['facet_fields']['country']),
+            'dates': dictify('date',
+                             result.facets['facet_ranges']['time']['counts']),
         }
     }
 
