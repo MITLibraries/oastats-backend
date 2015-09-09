@@ -8,6 +8,7 @@ except ImportError:
     pass
 
 import futures
+import pysolr
 
 from pipeline.request_writer import BufferedSolrWriter
 
@@ -32,21 +33,22 @@ def index(requests, solr_url):
             solr.write(doc)
 
 
-def summarize(requests, summary, solr, max_workers):
+def summarize(requests, summary, solr_url, end_date, max_workers):
+    solr = pysolr.Solr(solr_url)
     with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        job = executor.submit(query_solr, solr, *get_overall())
+        job = executor.submit(query_solr, solr, end_date, *get_overall())
         callback = partial(update, summary, {'_id': 'Overall'}, create_overall)
         job.add_done_callback(callback)
         for author in authors(requests):
-            job = executor.submit(query_solr, solr, *get_author(author))
+            job = executor.submit(query_solr, solr, end_date, *get_author(author))
             callback = partial(update, summary, {'_id': author}, create_author)
             job.add_done_callback(callback)
         for dlc in requests.distinct("dlcs"):
-            job = executor.submit(query_solr, solr, *get_dlc(dlc))
+            job = executor.submit(query_solr, solr, end_date, *get_dlc(dlc))
             callback = partial(update, summary, {'_id': dlc}, create_dlc)
             job.add_done_callback(callback)
         for handle in requests.distinct("handle"):
-            job = executor.submit(query_solr, solr, *get_handle(handle))
+            job = executor.submit(query_solr, solr, end_date, *get_handle(handle))
             callback = partial(update, summary, {'_id': handle}, create_handle)
             job.add_done_callback(callback)
 
@@ -60,17 +62,17 @@ def authors(requests):
     return filter(lambda x: x.get('mitid'), requests.distinct('authors'))
 
 
-def query_solr(solr, query, params):
-    default_params = {
+def query_solr(solr, query, end_date, params={}):
+    kwargs = {
         "facet": 'true',
         "facet.field": "country",
         "f.country.facet.limit": 250,
         "facet.range": "time",
         "facet.range.start": "2010-08-01T00:00:00Z",
-        # "facet.range.end": args.end_date,
+        "facet.range.end": end_date,
         "facet.range.gap": "+1DAY",
     }
-    kwargs = dict(default_params.items() + params.items())
+    kwargs.update(params)
     return solr.search(query, **kwargs)
 
 

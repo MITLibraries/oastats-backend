@@ -62,6 +62,26 @@ def test_index_maps_mongo_request_to_solr(solr, mongo_req):
     }]
 
 
+def test_query_solr_merges_query_params(solr):
+    query_solr(solr('http://example.com/'), '*', 'NOW',
+               {'foo': 'bar', 'facet': 'sure'})
+    assert solr().search.call_args[1]['foo'] == 'bar'
+    assert solr().search.call_args[1]['facet'] == 'sure'
+
+
+def test_query_solr_queries_solr(solr):
+    query_solr(solr('http://example.com'), 'foo:"Foo bar"', 'NOW')
+    assert solr().search.call_args[0] == ('foo:"Foo bar"',)
+
+
+def test_query_solr_sets_default_params(solr):
+    query_solr(solr('http://example.com'), '*', 'NOW')
+    assert solr().search.call_args[1] == \
+        {'facet': 'true', 'facet.field': 'country', 'f.country.facet.limit': 250,
+         'facet.range': 'time', 'facet.range.start': '2010-08-01T00:00:00Z',
+         'facet.range.end': 'NOW', 'facet.range.gap': '+1DAY'}
+
+
 def test_authors_returns_iterator_of_authors(mongo):
     a = [{'authors': [{'mitid': '1234', 'name': 'Captain Snuggles'},
                       {'mitid': '7890', 'name': 'Muffinpants'}]},
