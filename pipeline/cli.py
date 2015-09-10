@@ -4,12 +4,13 @@ import fileinput
 import logging
 import logging.config
 import re
+import json
 
 import yaml
 import click
 from pymongo import MongoClient
 
-from pipeline.pipeline import run
+from pipeline.pipeline import run, load_identities, generate_identities
 from pipeline.summary import index as idx, summarize
 
 
@@ -74,6 +75,14 @@ def summary(solr, end_date, mongo, mongo_req_db, mongo_req_collection,
     requests = client[mongo_req_db][mongo_req_collection]
     summary = client[mongo_sum_db][mongo_sum_collection]
     summarize(requests, summary, solr, end_date, max_workers)
+
+
+@main.command()
+@click.argument('tsv', type=click.File(encoding='utf-8'))
+def generate_ids(tsv):
+    ids = load_identities(tsv)
+    for identity in generate_identities(ids):
+        click.echo(json.dumps(identity))
 
 
 if __name__ == '__main__':

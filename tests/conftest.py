@@ -14,6 +14,12 @@ def geolite():
 
 
 @pytest.fixture
+def identities():
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(current_dir, 'fixtures/identities.csv')
+
+
+@pytest.fixture
 def id_svc():
     return 'http://example.com'
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+import json
 
 import pytest
 from mock import patch
@@ -87,3 +88,17 @@ def test_solr_date_type_passes_valid_date_type_through(runner):
     r = runner.invoke(cli, ['2015-01-01T00:00:00Z'])
     assert r.exception is None
     assert r.output == '2015-01-01T00:00:00Z\n'
+
+
+def test_generate_ids_outputs_list_of_json_objects(runner, identities):
+    r = runner.invoke(main, ['generate_ids', identities])
+    out = r.output.split('\n')
+    assert json.loads(out[0]) == {
+        'handle': 'http://example.com/1',
+        'ids': [{'name': 'Bar, Foo', 'mitid': '1000'},
+                {'name': 'Gaz, Foo', 'mitid': '3000'}]
+    }
+    assert json.loads(out[1]) == {
+        'handle': 'http://example.com/2',
+        'ids': [{'name': 'Baz, Foo', 'mitid': '2000'}]
+    }

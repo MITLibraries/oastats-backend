@@ -1,0 +1,4 @@
+Author	ID	Date Issued	URI	Match count	MIT ID	Column
+Bar, Foo	1234	2015-01	http://example.com/1	1 match	1000	
+Baz, Foo	5678	2015-01	http://example.com/2	2 matches	2000	abc
+Gaz, Foo	666	2015-01	http://example.com/1	1 match	3000	
