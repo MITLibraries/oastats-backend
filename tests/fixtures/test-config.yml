@@ -6,13 +6,13 @@ MONGO_COLLECTION: requests
 GEOIP_DB: tests/fixtures/GeoLite2-Country.mmdb
 DSPACE_IDENTITY_SERVICE: 'http://example.com'
 APACHE_FIELD_MAPPINGS:
-  '%h': 'ip_address'
-  '%t': 'time'
-  '%r': 'request'
-  '%>s': 'status'
-  '%{Referer}i': 'referer'
-  '%{User-agent}i': 'user_agent'
-  '%b': 'filesize'
+  'remote_host': 'ip_address'
+  'time_received': 'time'
+  'request_first_line': 'request'
+  'status': 'status'
+  'request_header_referer': 'referer'
+  'request_header_user_agent': 'user_agent'
+  'response_bytes_clf': 'filesize'
 LOGGING:
   version: 1
   handlers:

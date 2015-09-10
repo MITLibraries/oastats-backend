@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import re
 import requests
 
-from pipeline.decorators import memoize
+from pipeline import memoize
 
 
 handle_pattern = re.compile(r"/openaccess-disseminate/(?P<handle>[0-9.]+/[0-9]+)")
