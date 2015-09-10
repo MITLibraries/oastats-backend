@@ -3,6 +3,8 @@ from __future__ import absolute_import
 
 from mock import patch
 import pytest
+import yaml
+import arrow
 
 from pipeline.pipeline import *
 
@@ -49,3 +51,32 @@ def test_generate_identities_yields_records():
     assert next(idents) == \
         {'handle': 2, 'ids': [{'name': 'Baz', 'mitid': '3456'},
                               {'name': 'Gaz', 'mitid': ''}]}
+
+
+def test_process_returns_fully_built_request(cfg):
+    with open(cfg) as fp:
+        config = yaml.load(fp)
+    with patch('pipeline.dspace._make_request') as mock:
+        mock.return_value = {
+            'success': True,
+            'title': 'The Effects of Foo on Bar',
+            'ids': [[{'mitid': '1234', 'name': 'Bar, Foo'}]],
+            'departments': [{'display': 'Dept. of Foo', 'canonical': 'MIT Foo'}],
+            'uri': 'http://example.com/1'
+        }
+        r = process('1.2.3.4 - - [31/Jan/2013:23:58:51 -0500] "GET /openaccess-disseminate/1721.1/22774 HTTP/1.1" 200 6865 "-" "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2"',
+                    config)
+    assert r == {
+        'title': 'The Effects of Foo on Bar',
+        'authors': [{'mitid': '1234', 'name': 'Bar, Foo'}],
+        'dlcs': [{'display': 'Dept. of Foo', 'canonical': 'MIT Foo'}],
+        'handle': 'http://example.com/1',
+        'time': arrow.get('2013-01-31T23:58:51-0500'),
+        'request': '/openaccess-disseminate/1721.1/22774',
+        'country': 'AUS',
+        'filesize': '6865',
+        'ip_address': '1.2.3.4',
+        'referer': '-',
+        'status': '200',
+        'user_agent': 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2',
+    }

@@ -6,7 +6,7 @@ from geoip2.errors import AddressNotFoundError
 import pycountry
 import arrow
 
-from pipeline.decorators import memoize
+from pipeline import memoize
 
 
 @memoize
