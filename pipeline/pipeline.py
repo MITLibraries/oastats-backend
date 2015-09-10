@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import logging
+import csv
+from operator import itemgetter
+from itertools import groupby
 
 import apache_log_parser
 import requests
@@ -28,3 +31,21 @@ def run(lines, **kwargs):
                 continue
             if request:
                 mongo.write(request)
+
+
+def load_identities(fp):
+    dialect = csv.Sniffer().sniff(fp.read(1024))
+    fp.seek(0)
+    return csv.DictReader(fp, dialect=dialect)
+
+
+def generate_identities(rows):
+    s_rows = sorted(rows, key=itemgetter('URI'))
+    for handle, identities in groupby(s_rows, itemgetter('URI')):
+        record = {'handle': handle, 'ids': []}
+        for identity in identities:
+            record['ids'].append({
+                'name': identity['Author'],
+                'mitid': identity.get('MIT ID', "")
+            })
+        yield record
