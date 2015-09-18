@@ -62,7 +62,7 @@ def authors(requests):
     return filter(lambda x: x.get('mitid'), requests.distinct('authors'))
 
 
-def query_solr(solr, query, end_date, params={}):
+def query_solr(solr, end_date, query, params={}):
     kwargs = {
         "facet": 'true',
         "facet.field": "country",
@@ -87,7 +87,8 @@ def get_author(author):
     return query, params
 
 
-def create_author(result):
+def create_author(future):
+    result = future.result()
     return {
         "$set": {
             "type": "author",
@@ -112,7 +113,8 @@ def get_dlc(dlc):
     return query, params
 
 
-def create_dlc(result):
+def create_dlc(future):
+    result = future.result()
     return {
         "$set": {
             "type": "dlc",
@@ -132,13 +134,14 @@ def get_handle(handle):
     return query, params
 
 
-def create_handle(result):
+def create_handle(future):
+    result = future.result()
     hdl = result.docs[0]
     return {
         '$set': {
             'type': 'handle',
             'title': hdl['title'],
-            'downloads': result.grouped['handle']['matches'],
+            'downloads': result.hits,
             'countries': dictify('country',
                                  result.facets['facet_fields']['country']),
             'dates': dictify('date',
@@ -158,7 +161,8 @@ def get_overall():
     return '*', params
 
 
-def create_overall(result):
+def create_overall(future): #result):
+    result = future.result()
     return {
         '$set': {
             'type': 'overall',

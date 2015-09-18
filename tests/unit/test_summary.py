@@ -22,7 +22,7 @@ def mongo_req():
 
 
 @pytest.fixture
-def solr_result():
+def base_result():
     result = Mock()
     result.grouped = {
         'handle': {
@@ -41,6 +41,23 @@ def solr_result():
         }
     }
     return result
+
+
+@pytest.fixture
+def solr_result(base_result):
+    future = Mock()
+    future.result.return_value = base_result
+    return future
+
+
+@pytest.fixture
+def handle_result(base_result):
+    base_result.docs = [{'title': 'The Effects of Foo on Bar',
+                        'author': ['1234:Fluffy', '5678:Captain Snuggles']}]
+    base_result.hits = 10
+    future = Mock()
+    future.result.return_value = base_result
+    return future
 
 
 def test_index_adds_requests_to_solr(solr):
@@ -70,12 +87,12 @@ def test_query_solr_merges_query_params(solr):
 
 
 def test_query_solr_queries_solr(solr):
-    query_solr(solr('http://example.com'), 'foo:"Foo bar"', 'NOW')
+    query_solr(solr('http://example.com'), 'NOW', 'foo:"Foo bar"')
     assert solr().search.call_args[0] == ('foo:"Foo bar"',)
 
 
 def test_query_solr_sets_default_params(solr):
-    query_solr(solr('http://example.com'), '*', 'NOW')
+    query_solr(solr('http://example.com'), 'NOW', '*')
     assert solr().search.call_args[1] == \
         {'facet': 'true', 'facet.field': 'country', 'f.country.facet.limit': 250,
          'facet.range': 'time', 'facet.range.start': '2010-08-01T00:00:00Z',
@@ -154,10 +171,8 @@ def test_get_handle_returns_solr_query():
         ('handle:"http://example.com/foo"', {'rows': 1})
 
 
-def test_create_handle_creates_mongo_insert(solr_result):
-    solr_result.docs = [{'title': 'The Effects of Foo on Bar',
-                         'author': ['1234:Fluffy', '5678:Captain Snuggles']}]
-    assert create_handle(solr_result) == {
+def test_create_handle_creates_mongo_insert(handle_result):
+    assert create_handle(handle_result) == {
         '$set': {
             'type': 'handle',
             'title': 'The Effects of Foo on Bar',

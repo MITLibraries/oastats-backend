@@ -10,13 +10,13 @@ from mock import patch
 @pytest.fixture
 def geolite():
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    return os.path.join(current_dir, 'fixtures/GeoLite2-Country.mmdb')
+    return os.path.join(current_dir, '../fixtures/GeoLite2-Country.mmdb')
 
 
 @pytest.fixture
 def identities():
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    return os.path.join(current_dir, 'fixtures/identities.csv')
+    return os.path.join(current_dir, '../fixtures/identities.csv')
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def field_map():
 @pytest.fixture
 def cfg():
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    return os.path.join(current_dir, 'fixtures/test-config.yml')
+    return os.path.join(current_dir, '../fixtures/test-config.yml')
 
 
 @pytest.yield_fixture
