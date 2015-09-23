@@ -1,0 +1,53 @@
+
+{
+    "add-field": {
+        "name": "handle",
+        "type": "string",
+        "stored": true
+    },
+    "add-field": {
+        "name": "title",
+        "type": "string",
+        "stored": true
+    },
+    "add-field": {
+        "name": "country",
+        "type": "string",
+        "stored": true
+    },
+    "add-field": {
+        "name": "time",
+        "type": "tdate",
+        "stored": true
+    },
+    "add-field": {
+        "name": "dlc_display",
+        "type": "string",
+        "stored": true,
+        "multiValued": true
+    },
+    "add-field": {
+        "name": "dlc_canonical",
+        "type": "string",
+        "stored": true,
+        "multiValued": true
+    },
+    "add-field": {
+        "name": "author_id",
+        "type": "string",
+        "stored": true,
+        "multiValued": true
+    },
+    "add-field": {
+        "name": "author_name",
+        "type": "string",
+        "stored": true,
+        "multiValued": true
+    },
+    "add-field": {
+        "name": "author",
+        "type": "string",
+        "stored": true,
+        "multiValued": true
+    }
+}

@@ -1,0 +1,36 @@
+- handle: foobar
+  title: The Foobar
+  country: USA
+  time: 2015-01-01T00:00:00Z
+  dlc_canonical:
+      - Dept of Stuff
+      - Dept of Things
+  dlc_display:
+      - Stuff
+      - Things
+  author_id:
+      - '1234'
+      - '5678'
+  author_name:
+      - Bar, Foo
+      - Baz, Foo
+  author:
+      - 1234:Bar, Foo
+      - 5678:Baz, Foo
+- handle: foobaz
+  title: The Foobaz
+  country: FRA
+  time: 2015-02-01T00:00:00Z
+  dlc_canonical:
+    - Dept of Stuff
+  dlc_display:
+    - Stuff
+  author_id:
+      - '5678'
+      - '9876'
+  author_name:
+      - Baz, Foo
+      - Gaz, Foo
+  author:
+      - 5678:Baz, Foo
+      - 9876:Gaz, Foo
