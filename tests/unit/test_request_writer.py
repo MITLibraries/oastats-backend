@@ -9,32 +9,32 @@ from pipeline.request_writer import (buffered, BufferedMongoWriter,
 
 
 @pytest.fixture
-def f():
-    def fn(self, x=None):
-        return x
-    return fn
+def Foo():
+    class Bar(object):
+        @buffered(3)
+        def fn(self, request=None):
+            return request
+    return Bar
 
 
-def test_buffered_buffers_function(f):
-    fn = buffered(2)(f)
+def test_buffered_buffers_method(Foo):
+    foo = Foo()
 
-    assert fn(None, 1) is None
-    assert fn(None, 2) == [1, 2]
-    assert fn(None, 3) is None
-    assert fn(None, 4) == [3, 4]
-
-
-def test_buffered_function_flushes_when_called_without_args(f):
-    fn = buffered(10)(f)
-    fn(None, 1)
-    assert fn(None) == [1]
+    assert foo.fn(1) is None
+    assert foo.fn(2) is None
+    assert foo.fn(3) == [1, 2, 3]
+    assert foo.fn(4) is None
 
 
-def test_buffered_does_not_write_empty_list():
-    m = Mock()
-    fn = buffered(10)(m)
-    fn(None)
-    assert not m.called
+def test_buffered_method_flushes_when_called_without_args(Foo):
+    foo = Foo()
+    foo.fn(1)
+    assert foo.fn() == [1]
+
+
+def test_buffered_does_not_write_empty_list(Foo):
+    foo = Foo()
+    assert foo.fn() is None
 
 
 def test_mongo_writer_adds_requests(mongo):

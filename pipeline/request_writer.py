@@ -7,9 +7,8 @@ import pysolr
 
 def buffered(maxsize=1):
     def buffered_deco(f):
-        buffered_list = []
-
         def wrapper(self, request=None):
+            buffered_list = self.__dict__.setdefault('_buffered_list', [])
             if request is not None:
                 buffered_list.append(request)
                 if len(buffered_list) < maxsize:
