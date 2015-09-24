@@ -15,7 +15,7 @@ def solr_port():
 
 @pytest.fixture
 def mongo_port():
-    return os.environ['MONGO_PORT']
+    return int(os.environ['MONGO_PORT'])
 
 
 @pytest.fixture

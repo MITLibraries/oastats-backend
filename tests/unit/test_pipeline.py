@@ -6,7 +6,8 @@ import pytest
 import yaml
 import arrow
 
-from pipeline.pipeline import *
+from pipeline.pipeline import (run, process, load_identities,
+                               generate_identities)
 
 
 @pytest.yield_fixture

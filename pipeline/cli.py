@@ -38,8 +38,7 @@ def main():
 @click.argument('logfiles', nargs=-1,
                 type=click.Path(exists=True, resolve_path=True))
 def pipeline(config, logfiles):
-    with open(config) as fp:
-        cfg = yaml.load(fp)
+    cfg = _load_config(config)
     logging.config.dictConfig(cfg['LOGGING'])
     log = logging.getLogger("pipeline")
 
@@ -83,6 +82,12 @@ def generate_ids(tsv):
     ids = load_identities(tsv)
     for identity in generate_identities(ids):
         click.echo(json.dumps(identity))
+
+
+def _load_config(cfg_file):
+    with open(cfg_file) as fp:
+        cfg = yaml.load(fp)
+    return cfg
 
 
 if __name__ == '__main__':
