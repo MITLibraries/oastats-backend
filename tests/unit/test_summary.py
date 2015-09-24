@@ -75,7 +75,8 @@ def test_index_maps_mongo_request_to_solr(solr, mongo_req):
         'dlc_display': ['Stuff n Such', 'Other Things'],
         'dlc_canonical': ['Dept of Stuff', 'Dept of Things'],
         'author_id': ['1234', '7890'],
-        'author_name': ['Captain Snuggles', 'Muffinpants']
+        'author_name': ['Captain Snuggles', 'Muffinpants'],
+        'author': ['1234:Captain Snuggles', '7890:Muffinpants']
     }]
 
 
@@ -126,7 +127,7 @@ def test_authors_filters_out_authors_with_empty_mitid(mongo):
 
 
 def test_get_author_returns_solr_query():
-    assert get_author({'mitid': 1234, 'name': 'Fluffy'}) == \
+    assert get_author({'mitid': '1234', 'name': 'Fluffy'}) == \
         ('author_id:"1234"', {'rows': 0, 'group': 'true',
                               'group.field': 'handle', 'group.ngroups': 'true'})
 
@@ -181,8 +182,8 @@ def test_create_handle_creates_mongo_insert(handle_result):
                           {'country': 'ISL', 'downloads': 4}],
             'dates': [{'date': '2015-01-01', 'downloads': 3},
                       {'date': '2015-02-01', 'downloads': 5}],
-            'parents': [{'mitid': 1234, 'name': 'Fluffy'},
-                        {'mitid': 5678, 'name': 'Captain Snuggles'}]
+            'parents': [{'mitid': '1234', 'name': 'Fluffy'},
+                        {'mitid': '5678', 'name': 'Captain Snuggles'}]
         }
     }
 
@@ -214,9 +215,17 @@ def test_dictify_converts_facet_count_to_dictionary():
 
 
 def test_split_author_turns_string_into_compound_field():
-    assert split_author('1234:Foo Bar') == {'mitid': 1234, 'name': 'Foo Bar'}
+    assert split_author('1234:Foo Bar') == {'mitid': '1234', 'name': 'Foo Bar'}
 
 
 def test_split_author_returns_none_for_invalid_author():
     assert split_author(':Foo Bar') is None
     assert split_author('Foo Bar') is None
+
+
+def test_join_author_joins_author_parts():
+    assert join_author({'name': 'Cat, Lucy', 'mitid': '1234'}) == \
+        '1234:Cat, Lucy'
+
+def test_join_author_uses_empty_string_for_missing_items():
+    assert join_author({'name': 'Cat, Lucy'}) == ':Cat, Lucy'
