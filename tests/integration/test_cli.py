@@ -5,6 +5,9 @@ from click.testing import CliRunner
 import pytest
 import pysolr
 import pymongo
+from mock import patch
+import yaml
+import arrow
 
 from pipeline.cli import main
 
@@ -15,6 +18,38 @@ pytestmark = pytest.mark.usefixtures('clean_mongo', 'clean_solr')
 @pytest.fixture
 def runner():
     return CliRunner()
+
+
+def test_pipeline_adds_request(runner, mongo_port, cfg, apache_req):
+    with open(cfg) as fp:
+        config = yaml.load(fp)
+    config['MONGO_CONNECTION'] = ['localhost', mongo_port]
+    with patch('pipeline.cli._load_config') as conf, \
+            patch('pipeline.pipeline.fetch_metadata') as dspace:
+                dspace.return_value = {'foo': 'bar'}
+                conf.return_value = config
+                runner.invoke(main, ['pipeline', '--config', cfg], apache_req)
+    c = pymongo.MongoClient('mongodb://localhost:%s' % mongo_port)
+    req = c.oastats.requests.find_one()
+    assert req['foo'] == 'bar'
+
+
+def test_pipeline_processes_request(runner, mongo_port, cfg, apache_req):
+    with open(cfg) as fp:
+        config = yaml.load(fp)
+    config['MONGO_CONNECTION'] = ['localhost', mongo_port]
+    with patch('pipeline.cli._load_config') as conf, \
+            patch('pipeline.pipeline.fetch_metadata') as dspace:
+                conf.return_value = config
+                runner.invoke(main, ['pipeline', '--config', cfg], apache_req)
+                req = dspace.call_args[0][0]
+    assert req == {'country': 'AUS', 'filesize': '6865',
+                   'ip_address': '1.2.3.4', 'referer': '-',
+                   'request': '/openaccess-disseminate/1721.1/22774',
+                   'status': '200',
+                   'time': arrow.get('[31/Jan/2013:23:58:51 -0500]',
+                                     '[DD/MMM/YYYY:HH:mm:ss Z]').datetime,
+                   'user_agent': 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2'}
 
 
 @pytest.mark.usefixtures('load_mongo_records')
