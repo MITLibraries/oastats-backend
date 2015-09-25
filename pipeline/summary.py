@@ -159,10 +159,10 @@ def get_overall():
         "group.field": "handle",
         "group.ngroups": "true",
     }
-    return '*', params
+    return '*:*', params
 
 
-def create_overall(future): #result):
+def create_overall(future):
     result = future.result()
     return {
         '$set': {
