@@ -62,7 +62,13 @@ def test_index_adds_mongo_records_to_solr(runner, solr_port, mongo_port):
     r = solr.search('*:*')
     assert len(r) == 2
     doc = next(iter(r))
-    assert doc['title'] == 'The Foobar'
+    assert doc == {'title': 'The Foobar', 'handle': 'foobar', 'country': 'USA',
+                   'time': '2015-01-01T00:00:00Z',
+                   'dlc_display': ['Stuff', 'Things'],
+                   'dlc_canonical': ['Dept of Stuff', 'Dept of Things'],
+                   'author_id': ['1234', '5678'],
+                   'author_name': ['Bar, Foo', 'Baz, Foo'],
+                   'author': ['1234:Bar, Foo', '5678:Baz, Foo']}
 
 
 @pytest.mark.usefixtures('load_mongo_records', 'load_solr_records')

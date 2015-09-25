@@ -29,6 +29,7 @@ def index(requests, solr_url):
                                       request.get('authors', []))),
                 'author_name': list(map(itemgetter('name'),
                                         request.get('authors', []))),
+                'author': list(map(join_author, request.get('authors', [])))
             }
             solr.write(doc)
 
@@ -209,4 +210,8 @@ def split_author(author):
     except ValueError:
         return
     if mitid and name:
-        return {'mitid': int(mitid), 'name': name}
+        return {'mitid': mitid, 'name': name}
+
+
+def join_author(author):
+    return "%s:%s" % (author.get('mitid', ''), author.get('name', ''))
