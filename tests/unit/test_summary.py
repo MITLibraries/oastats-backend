@@ -189,7 +189,7 @@ def test_create_handle_creates_mongo_insert(handle_result):
 
 
 def test_get_overall_returns_solr_query():
-    assert get_overall() == ('*', {'rows': 0, 'group': 'true',
+    assert get_overall() == ('*:*', {'rows': 0, 'group': 'true',
                                    'group.field': 'handle',
                                    'group.ngroups': 'true'})
 
