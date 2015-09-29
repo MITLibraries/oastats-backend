@@ -1,6 +1,4 @@
-MONGO_CONNECTION:
-  - localhost
-  - 27017
+MONGO_CONNECTION: 'mongodb://localhost:27017'
 MONGO_DB: oastats
 MONGO_COLLECTION: requests
 GEOIP_DB: tests/fixtures/GeoLite2-Country.mmdb
