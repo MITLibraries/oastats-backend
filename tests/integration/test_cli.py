@@ -23,7 +23,7 @@ def runner():
 def test_pipeline_adds_request(runner, mongo_port, cfg, apache_req):
     with open(cfg) as fp:
         config = yaml.load(fp)
-    config['MONGO_CONNECTION'] = ['localhost', mongo_port]
+    config['MONGO_CONNECTION'] = 'mongodb://localhost:%d' % mongo_port
     with patch('pipeline.cli._load_config') as conf:
         with patch('pipeline.pipeline.fetch_metadata') as dspace:
             dspace.return_value = {'foo': 'bar'}
@@ -37,7 +37,7 @@ def test_pipeline_adds_request(runner, mongo_port, cfg, apache_req):
 def test_pipeline_processes_request(runner, mongo_port, cfg, apache_req):
     with open(cfg) as fp:
         config = yaml.load(fp)
-    config['MONGO_CONNECTION'] = ['localhost', mongo_port]
+    config['MONGO_CONNECTION'] = 'mongodb://localhost:%d' % mongo_port
     with patch('pipeline.cli._load_config') as conf:
         with patch('pipeline.pipeline.fetch_metadata') as dspace:
             conf.return_value = config

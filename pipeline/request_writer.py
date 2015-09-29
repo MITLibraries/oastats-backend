@@ -23,7 +23,7 @@ def buffered(maxsize=1):
 
 class BufferedMongoWriter(object):
     def __init__(self, db, collection, conn):
-        client = MongoClient(*conn)
+        client = MongoClient(conn)
         self.collection = client[db][collection]
 
     def __enter__(self):

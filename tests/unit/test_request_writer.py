@@ -38,14 +38,16 @@ def test_buffered_does_not_write_empty_list(Foo):
 
 
 def test_mongo_writer_adds_requests(mongo):
-    m = BufferedMongoWriter('foo', 'bar', ['localhost', mongo.port])
+    m = BufferedMongoWriter('foo', 'bar',
+                            'mongodb://localhost:%d' % mongo.port)
     m.write({'foo': 'bar'})
     m.write()
     assert m.collection.count({'foo': 'bar'}) == 1
 
 
 def test_mongo_writer_flushes_on_exit(mongo):
-    with BufferedMongoWriter('foo', 'bar', ['localhost', mongo.port]) as m:
+    with BufferedMongoWriter('foo', 'bar',
+                             'mongodb://localhost:%d' % mongo.port) as m:
         m.write({'foo': 'gaz'})
     assert m.collection.count({'foo': 'gaz'}) == 1
 
