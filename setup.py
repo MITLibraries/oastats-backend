@@ -12,7 +12,7 @@ with io.open('LICENSE') as f:
 
 
 setup(
-    name='OAStats Pipeline',
+    name='oastats-pipeline',
     version='0.1.0',
     description='Generate download statistics for the Open Access collection',
     long_description=__doc__,
@@ -38,7 +38,7 @@ setup(
         'ua-parser',
         'user-agents',
     ],
-    extras_requires={
+    extras_require={
         ':python_version=="2.7"': ['ipaddr'],
     },
     entry_points={
@@ -47,7 +47,6 @@ setup(
         ]
     },
     classifiers=[
-        'Internal :: Do Not Upload',
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Environment :: Console',
