@@ -19,6 +19,11 @@ cleanup () {
     docker stop $MONGO_CONTAINER && docker rm $MONGO_CONTAINER
 }
 
+# Docker on non-linux runs in a vm. If you are not running on localhost, set DOCKER_IP as an ENV
+# Using docker-machine, running tox via "DOCKER_IP=$(docker-machine ip testenv) tox" is one option
+# to do that.
+export DOCKER_IP=${DOCKER_IP:-localhost}
+
 SOLR_CONTAINER=$(docker run -P -d mitlibraries/oastats-solr)
 MONGO_CONTAINER=$(docker run -P -d mongo)
 
@@ -28,8 +33,11 @@ trap cleanup EXIT
 # solution with a loop would be better here, but this hack works for now.
 sleep 5
 
-export MONGO_PORT=$(docker port $MONGO_CONTAINER 27017/tcp | cut -d':' -f2)
-export SOLR_PORT=$(docker port $SOLR_CONTAINER 8983/tcp | cut -d':' -f2)
+MONGO_PORT=$(docker port $MONGO_CONTAINER 27017/tcp | cut -d':' -f2)
+SOLR_PORT=$(docker port $SOLR_CONTAINER 8983/tcp | cut -d':' -f2)
+
+export MONGO_URI=$DOCKER_IP:$MONGO_PORT
+export SOLR_URI=$DOCKER_IP:$SOLR_PORT
 
 if [ $COVERAGE -eq 1 ]; then
     py.test --cov=pipeline --cov-append tests/integration --tb=short
