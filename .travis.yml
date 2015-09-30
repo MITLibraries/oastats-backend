@@ -8,6 +8,8 @@ env:
   global:
     - SOLR_PORT=8983
     - MONGO_PORT=27018
+    - SOLR_URI=localhost:8983
+    - MONGO_URI=localhost:27018
   matrix:
     - TOX_ENV=py27-travis
     - TOX_ENV=py33-travis

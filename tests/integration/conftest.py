@@ -9,18 +9,18 @@ import yaml
 
 
 @pytest.fixture
-def solr_port():
-    return os.environ['SOLR_PORT']
+def solr_uri():
+    return os.environ['SOLR_URI']
 
 
 @pytest.fixture
-def mongo_port():
-    return int(os.environ['MONGO_PORT'])
+def mongo_uri():
+    return os.environ['MONGO_URI']
 
 
 @pytest.fixture
-def mongo_client(mongo_port):
-    return pymongo.MongoClient('mongodb://localhost:%s' % mongo_port)
+def mongo_client(mongo_uri):
+    return pymongo.MongoClient('mongodb://%s' % mongo_uri)
 
 
 @pytest.fixture
@@ -31,8 +31,8 @@ def load_mongo_records(mongo_client):
 
 
 @pytest.fixture
-def solr_client(solr_port):
-    return pysolr.Solr('http://localhost:%s/solr/oastats' % solr_port)
+def solr_client(solr_uri):
+    return pysolr.Solr('http://%s/solr/oastats' % solr_uri)
 
 
 @pytest.fixture
