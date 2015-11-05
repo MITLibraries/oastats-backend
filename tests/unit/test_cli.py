@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import json
+import sys
 
 import pytest
 from mock import patch
@@ -90,6 +91,7 @@ def test_solr_date_type_passes_valid_date_type_through(runner):
     assert r.output == '2015-01-01T00:00:00Z\n'
 
 
+@pytest.mark.skipif(sys.version_info.major < 3, reason="requires python3")
 def test_generate_ids_outputs_list_of_json_objects(runner, identities):
     r = runner.invoke(main, ['generate_ids', identities])
     out = r.output.split('\n')
@@ -101,4 +103,14 @@ def test_generate_ids_outputs_list_of_json_objects(runner, identities):
     assert json.loads(out[1]) == {
         'handle': 'http://example.com/2',
         'ids': [{'name': 'Baz, Foo', 'mitid': '2000'}]
+    }
+
+
+@pytest.mark.skipif(sys.version_info.major < 3, reason="requires python3")
+def test_generate_ids_handles_non_ascii(runner, identities):
+    r = runner.invoke(main, ['generate_ids', identities])
+    out = r.output.split('\n')
+    assert json.loads(out[2]) == {
+        'handle': 'http://example.com/3',
+        'ids': [{'name': 'βar, Foo', 'mitid': '0001'}]
     }

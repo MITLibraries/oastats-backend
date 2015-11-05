@@ -5,6 +5,7 @@ import logging
 import logging.config
 import re
 import json
+import sys
 
 import yaml
 import click
@@ -79,9 +80,11 @@ def summary(solr, end_date, mongo, mongo_req_db, mongo_req_collection,
 @main.command()
 @click.argument('tsv', type=click.File(encoding='utf-8'))
 def generate_ids(tsv):
+    if sys.version_info.major < 3:
+        raise click.UsageError('This subcommand requires python 3')
     ids = load_identities(tsv)
     for identity in generate_identities(ids):
-        click.echo(json.dumps(identity))
+        click.echo(json.dumps(identity, ensure_ascii=False))
 
 
 def _load_config(cfg_file):
