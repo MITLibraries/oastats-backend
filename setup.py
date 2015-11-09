@@ -35,7 +35,7 @@ setup(
         'python-dateutil',
         'requests',
         'six',
-        'ua-parser',
+        'ua-parser<0.5',
         'user-agents',
     ],
     extras_require={
