@@ -47,8 +47,8 @@ def test_pipeline_processes_request(runner, mongo_uri, cfg, apache_req):
                    'ip_address': '1.2.3.4', 'referer': '-',
                    'request': '/openaccess-disseminate/1721.1/22774',
                    'status': '200',
-                   'time': arrow.get('[31/Jan/2013:23:58:51 -0500]',
-                                     '[DD/MMM/YYYY:HH:mm:ss Z]').datetime,
+                   'time': arrow.get('31/Jan/2013:23:58:51 -0500',
+                                     'DD/MMM/YYYY:HH:mm:ss Z').datetime,
                    'user_agent': 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2'}
 
 

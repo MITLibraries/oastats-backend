@@ -48,7 +48,7 @@ def add_country(request, database):
 
 def str_to_dt(request):
     """Convert Apache timestamp to datetime object."""
-    t = arrow.get(request['time'], '[DD/MMM/YYYY:HH:mm:ss Z]')
+    t = arrow.get(request['time'].strip('[]'), 'DD/MMM/YYYY:HH:mm:ss Z')
     request['time'] = t.datetime
     return request
 
