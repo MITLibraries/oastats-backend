@@ -6,9 +6,15 @@ import pytest
 
 
 @pytest.fixture
-def cfg():
+def logging_cfg():
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    return os.path.join(current_dir, 'fixtures/test-config.yml')
+    return os.path.join(current_dir, 'fixtures/logging.yml')
+
+
+@pytest.fixture
+def geolite():
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(current_dir, 'fixtures/GeoLite2-Country.mmdb')
 
 
 @pytest.fixture

@@ -1,0 +1,10 @@
+version: 1
+handlers:
+  console:
+    class: logging.NullHandler
+    level: INFO
+loggers:
+  pipeline:
+    handlers: [console]
+  pipeline.requests:
+    handlers: [console]

@@ -8,20 +8,20 @@ from itertools import groupby
 import apache_log_parser
 import requests
 
+from pipeline import APACHE_FIELD_MAPPINGS
 from pipeline.parse_log import parse
 from pipeline.request import add_country, str_to_dt, req_to_url
 from pipeline.dspace import fetch_metadata
 from pipeline.request_writer import BufferedMongoWriter
 
 
-def run(lines, **kwargs):
+def run(lines, mongo, mongo_db, mongo_collection, geo_ip, dspace):
     req_log = logging.getLogger("pipeline.requests")
 
-    with BufferedMongoWriter(kwargs['MONGO_DB'], kwargs['MONGO_COLLECTION'],
-                             kwargs['MONGO_CONNECTION']) as mongo:
+    with BufferedMongoWriter(mongo_db, mongo_collection, mongo) as mongo:
         for line in lines:
             try:
-                request = process(line, kwargs)
+                request = process(line, geo_ip, dspace)
             except apache_log_parser.ApacheLogParserException:
                 req_log.error(line.strip(), extra={'err_type': 'REQUEST_ERROR'})
                 continue
@@ -35,14 +35,14 @@ def run(lines, **kwargs):
                 mongo.write(request)
 
 
-def process(request, config):
+def process(request, geo_ip, dspace):
     """Process an Apache log request with the pipeline and return a dictionary."""
-    req = parse(request, mappings=config['APACHE_FIELD_MAPPINGS'])
+    req = parse(request, mappings=APACHE_FIELD_MAPPINGS)
     if req is not None:
         req = str_to_dt(req)
-        req = add_country(req, config['GEOIP_DB'])
+        req = add_country(req, geo_ip)
         req = req_to_url(req)
-        req = fetch_metadata(req, config['DSPACE_IDENTITY_SERVICE'])
+        req = fetch_metadata(req, dspace)
     return req
 
 

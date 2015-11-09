@@ -7,7 +7,6 @@ import pytest
 from mock import patch
 import click
 from click.testing import CliRunner
-import yaml
 
 from pipeline.cli import main, SOLR_DATE
 
@@ -17,29 +16,20 @@ def runner():
     return CliRunner()
 
 
-@pytest.fixture
-def cfg_loaded(cfg):
-    with open(cfg) as fp:
-        return yaml.load(fp)
-
-
-def test_pipeline_adds_request(runner, cfg):
+def test_pipeline_requires_dspace_option(runner, geolite, logging_cfg):
     with patch('pipeline.cli.run') as mock:
-        runner.invoke(main, ['pipeline', '--config', cfg], input='Foo\n')
-        assert mock.call_count == 1
+        result = runner.invoke(main, ['pipeline', '--geo-ip', geolite,
+                               '--logging-config', logging_cfg], input='Foo\n')
+    assert result.exit_code == 2
+    assert 'You must specify the URL' in result.output
 
 
-def test_pipeline_sets_config_from_option(runner, cfg, cfg_loaded):
+def test_pipeline_checks_for_geoip_db(runner):
     with patch('pipeline.cli.run') as mock:
-        runner.invoke(main, ['pipeline', '--config', cfg], input='Foo\n')
-        assert mock.call_args[1] == cfg_loaded
-
-
-def test_pipeline_sets_config_from_envvar(runner, cfg, cfg_loaded):
-    with patch('pipeline.cli.run') as mock:
-        runner.invoke(main, ['pipeline'], input='Foo\n',
-                      env={'OASTATS_SETTINGS': cfg})
-        assert mock.call_args[1] == cfg_loaded
+        result = runner.invoke(main, ['pipeline', '--geo-ip', 'foobar'],
+                               input='Foo\n')
+    assert result.exit_code == 2
+    assert 'Invalid value for "--geo-ip"' in result.output
 
 
 def test_index_adds_request(runner, mongo):
