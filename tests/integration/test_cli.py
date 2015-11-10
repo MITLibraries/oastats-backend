@@ -20,29 +20,27 @@ def runner():
     return CliRunner()
 
 
-def test_pipeline_adds_request(runner, mongo_uri, cfg, apache_req):
-    with open(cfg) as fp:
-        config = yaml.load(fp)
-    config['MONGO_CONNECTION'] = 'mongodb://%s' % mongo_uri
-    with patch('pipeline.cli._load_config') as conf:
-        with patch('pipeline.pipeline.fetch_metadata') as dspace:
-            dspace.return_value = {'foo': 'bar'}
-            conf.return_value = config
-            runner.invoke(main, ['pipeline', '--config', cfg], apache_req)
+def test_pipeline_adds_request(runner, mongo_uri, geolite, apache_req,
+                               logging_cfg):
+    mongo = 'mongodb://%s' % mongo_uri
+    with patch('pipeline.pipeline.fetch_metadata') as dspace:
+        dspace.return_value = {'foo': 'bar'}
+        runner.invoke(main, ['pipeline', '--mongo', mongo, '--geo-ip',
+                      geolite, '--dspace', 'http://example.com',
+                      '--logging-config', logging_cfg], apache_req)
     c = pymongo.MongoClient('mongodb://%s' % mongo_uri)
     req = c.oastats.requests.find_one()
     assert req['foo'] == 'bar'
 
 
-def test_pipeline_processes_request(runner, mongo_uri, cfg, apache_req):
-    with open(cfg) as fp:
-        config = yaml.load(fp)
-    config['MONGO_CONNECTION'] = 'mongodb://%s' % mongo_uri
-    with patch('pipeline.cli._load_config') as conf:
-        with patch('pipeline.pipeline.fetch_metadata') as dspace:
-            conf.return_value = config
-            runner.invoke(main, ['pipeline', '--config', cfg], apache_req)
-            req = dspace.call_args[0][0]
+def test_pipeline_processes_request(runner, mongo_uri, geolite, apache_req,
+                                    logging_cfg):
+    mongo = 'mongodb://%s' % mongo_uri
+    with patch('pipeline.pipeline.fetch_metadata') as dspace:
+        runner.invoke(main, ['pipeline', '--mongo', mongo, '--geo-ip',
+                      geolite, '--dspace', 'http://example.com',
+                      '--logging-config', logging_cfg], apache_req)
+        req = dspace.call_args[0][0]
     assert req == {'country': 'AUS', 'filesize': '6865',
                    'ip_address': '1.2.3.4', 'referer': '-',
                    'request': '/openaccess-disseminate/1721.1/22774',

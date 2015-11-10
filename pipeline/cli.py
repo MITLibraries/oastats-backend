@@ -9,6 +9,7 @@ import sys
 
 import yaml
 import click
+from click import BadParameter
 from pymongo import MongoClient
 
 from pipeline.pipeline import run, load_identities, generate_identities
@@ -34,16 +35,25 @@ def main():
 
 
 @main.command()
-@click.option('--config', envvar='OASTATS_SETTINGS',
-              type=click.Path(exists=True, resolve_path=True))
 @click.argument('logfiles', nargs=-1,
                 type=click.Path(exists=True, resolve_path=True))
-def pipeline(config, logfiles):
-    cfg = _load_config(config)
-    logging.config.dictConfig(cfg['LOGGING'])
+@click.option('--mongo', default='mongodb://localhost:27017')
+@click.option('--mongo-db', default='oastats')
+@click.option('--mongo-collection', default='requests')
+@click.option('--geo-ip', default='GeoLite2-Country.mmdb',
+              type=click.Path(exists=True, resolve_path=True))
+@click.option('--dspace')
+@click.option('--logging-config', default='logging.yml',
+              type=click.File(encoding='utf-8'))
+def pipeline(mongo, mongo_db, mongo_collection, geo_ip, dspace, logging_config,
+             logfiles):
+    if not dspace:
+        raise BadParameter('You must specify the URL for the DSpace service')
+    logging.config.dictConfig(yaml.load(logging_config))
     log = logging.getLogger("pipeline")
 
-    run(fileinput.input(logfiles), **cfg)
+    run(fileinput.input(logfiles), mongo=mongo, mongo_db=mongo_db,
+        mongo_collection=mongo_collection, geo_ip=geo_ip, dspace=dspace)
 
     log.info("{0} requests processed".format(fileinput.lineno()))
 
@@ -85,12 +95,6 @@ def generate_ids(tsv):
     ids = load_identities(tsv)
     for identity in generate_identities(ids):
         click.echo(json.dumps(identity, ensure_ascii=False))
-
-
-def _load_config(cfg_file):
-    with open(cfg_file) as fp:
-        cfg = yaml.load(fp)
-    return cfg
 
 
 if __name__ == '__main__':
