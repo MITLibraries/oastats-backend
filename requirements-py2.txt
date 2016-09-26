@@ -1,3 +1,0 @@
--r requirements.txt
-ipaddr==2.1.11
-futures==3.0.3

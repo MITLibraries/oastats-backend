@@ -1,33 +1,9 @@
-sudo: required
-dist: trusty
-services:
-    - docker
 notifications:
   email: false
 language: python
 env:
-  global:
-    - SOLR_PORT=8983
-    - MONGO_PORT=27018
-    - SOLR_URI=localhost:8983
-    - MONGO_URI=localhost:27018
-  matrix:
-    - TOX_ENV=py27-travis
-    - TOX_ENV=py33-travis
-    - TOX_ENV=py34-travis
-    - TOX_ENV=coveralls
-install:
-  - pip install tox
-before_script:
-    - sleep 15
-before_install:
-    - sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
-    - echo "deb http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.0.list
-    - sudo apt-get update
-    - sudo apt-get install -y mongodb-org
-    - docker pull mitlibraries/oastats-solr
-    - docker run -d -p 8983:8983 mitlibraries/oastats-solr
-    - docker pull mongo
-    - docker run -d -p 27018:27017 mongo
-script:
-  - tox -e $TOX_ENV
+  - TOX_ENV=py27
+  - TOX_ENV=py35
+  - TOX_ENV=coveralls
+install: pip install tox
+script: tox -e $TOX_ENV

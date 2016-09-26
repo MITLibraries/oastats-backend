@@ -1,32 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+from contextlib import closing
 import fileinput
-import logging
-import logging.config
-import re
-import json
-import sys
 
-import yaml
+import arrow
 import click
-from click import BadParameter
-from pymongo import MongoClient
+import geoip2.database
+import maxminddb.const
+import requests
 
-from pipeline.pipeline import run, load_identities, generate_identities
-from pipeline.summary import index as idx, summarize
-
-
-class SolrDateType(click.ParamType):
-    name = 'solr date'
-    r = re.compile('\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z')
-
-    def convert(self, value, param, ctx):
-        if not self.r.match(value):
-            self.fail('%s is not a valid date format' % value, param, ctx)
-        return value
-
-
-SOLR_DATE = SolrDateType()
+from pipeline.pipeline import construct_pipeline
 
 
 @click.group()
@@ -35,67 +18,23 @@ def main():
 
 
 @main.command()
-@click.argument('logfiles', nargs=-1,
-                type=click.Path(exists=True, resolve_path=True))
-@click.option('--mongo', default='mongodb://localhost:27017')
-@click.option('--mongo-db', default='oastats')
-@click.option('--mongo-collection', default='requests')
+@click.argument('files', nargs=-1, type=click.Path(exists=True,
+                                                   resolve_path=True,
+                                                   allow_dash=True))
+@click.option('--month', '-m', multiple=True)
 @click.option('--geo-ip', default='GeoLite2-Country.mmdb',
               type=click.Path(exists=True, resolve_path=True))
-@click.option('--dspace')
-@click.option('--logging-config', default='logging.yml',
-              type=click.File(encoding='utf-8'))
-def pipeline(mongo, mongo_db, mongo_collection, geo_ip, dspace, logging_config,
-             logfiles):
-    if not dspace:
-        raise BadParameter('You must specify the URL for the DSpace service')
-    logging.config.dictConfig(yaml.load(logging_config))
-    log = logging.getLogger("pipeline")
-
-    run(fileinput.input(logfiles), mongo=mongo, mongo_db=mongo_db,
-        mongo_collection=mongo_collection, geo_ip=geo_ip, dspace=dspace)
-
-    log.info("{0} requests processed".format(fileinput.lineno()))
-
-
-@main.command()
-@click.argument('solr')
-@click.option('--mongo', default='mongodb://localhost:27017')
-@click.option('--mongo-db', default='oastats')
-@click.option('--mongo-collection', default='requests')
-def index(solr, mongo, mongo_db, mongo_collection):
-    client = MongoClient(mongo)
-    collection = client[mongo_db][mongo_collection]
-    requests = collection.find()
-    idx(requests, solr)
-
-
-@main.command()
-@click.argument('solr')
-@click.argument('end_date', type=SOLR_DATE)
-@click.option('--mongo', default='mongodb://localhost:27017')
-@click.option('--mongo-req-db', default='oastats')
-@click.option('--mongo-req-collection', default='requests')
-@click.option('--mongo-sum-db', default='oastats')
-@click.option('--mongo-sum-collection', default='summary')
-@click.option('--max-workers', default=1, type=click.INT)
-def summary(solr, end_date, mongo, mongo_req_db, mongo_req_collection,
-            mongo_sum_db, mongo_sum_collection, max_workers):
-    client = MongoClient(mongo)
-    requests = client[mongo_req_db][mongo_req_collection]
-    summary = client[mongo_sum_db][mongo_sum_collection]
-    summarize(requests, summary, solr, end_date, max_workers)
-
-
-@main.command()
-@click.argument('tsv', type=click.File(encoding='utf-8'))
-def generate_ids(tsv):
-    if sys.version_info.major < 3:
-        raise click.UsageError('This subcommand requires python 3')
-    ids = load_identities(tsv)
-    for identity in generate_identities(ids):
-        click.echo(json.dumps(identity, ensure_ascii=False))
-
-
-if __name__ == '__main__':
-    main()
+@click.option('--dspace', default='https://dspace.mit.edu/ws/oastats')
+def pipeline(files, month, geo_ip, dspace):
+    if not month:
+        month = []
+    dates = [arrow.get(d, ['MMM/YYYY', 'MMM-YYYY']) for d in month]
+    dates = [d.format('MMM/YYYY') for d in dates]
+    with requests.Session() as session:
+        with closing(geoip2.database.Reader(geo_ip,
+                     mode=maxminddb.const.MODE_MMAP)) as reader:
+            pipeline = construct_pipeline(session, reader, dspace, dates)
+            for request in pipeline(fileinput.input(files)):
+                req = (request['request_url'], request['country'],
+                       request['time'])
+                print('\t'.join(req))

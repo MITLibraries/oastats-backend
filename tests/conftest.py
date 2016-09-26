@@ -1,22 +1,56 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+import io
 import os
 
+import geoip2.database
+import maxminddb.const
 import pytest
 
 
 @pytest.fixture
-def logging_cfg():
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    return os.path.join(current_dir, 'fixtures/logging.yml')
+def geolite_db():
+    return os.path.join(_current_dir(), 'fixtures/GeoLite2-Country.mmdb')
+
+
+@pytest.yield_fixture
+def geolite(geolite_db):
+    reader = geoip2.database.Reader(geolite_db,
+                                    mode=maxminddb.const.MODE_MMAP)
+    yield reader
+    reader.close()
 
 
 @pytest.fixture
-def geolite():
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    return os.path.join(current_dir, 'fixtures/GeoLite2-Country.mmdb')
+def log_file():
+    return os.path.join(_current_dir(), 'fixtures/requests.log')
+
+
+@pytest.yield_fixture
+def logs(log_file):
+    with io.open(log_file) as fp:
+        yield fp
 
 
 @pytest.fixture
-def apache_req():
-    return '1.2.3.4 - - [31/Jan/2013:23:58:51 -0500] "GET /openaccess-disseminate/1721.1/22774 HTTP/1.1" 200 6865 "-" "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2"'
+def id_req():
+    return {
+        'success': True,
+        'title': 'A paper.',
+        'uri': 'http://example.com/1234',
+        'departments': [{
+            'display': 'Foo Dept.',
+            'canonical': 'The Foo Dept.'
+        }],
+        'ids': [[{
+            'mitid': '1234',
+            'name': 'Bar, Foo H.'
+        }, {
+            'mitid': '5678',
+            'name': 'Baz, Foo H.'
+        }]]
+    }
+
+
+def _current_dir():
+    return os.path.dirname(os.path.realpath(__file__))
