@@ -7,6 +7,17 @@ import geoip2.database
 import maxminddb.const
 import pytest
 
+from pipeline.db import engine, metadata
+
+
+@pytest.yield_fixture
+def db():
+    engine.configure('sqlite://')
+    metadata.bind = engine()
+    metadata.create_all()
+    yield
+    metadata.drop_all()
+
 
 @pytest.fixture
 def geolite_db():

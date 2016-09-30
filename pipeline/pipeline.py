@@ -4,9 +4,10 @@ import re
 from functools import partial, reduce
 
 import arrow
-from dogpile.cache import make_region
 from geoip2.errors import AddressNotFoundError
 import pycountry
+
+from pipeline.cache import region
 
 
 field_names = ('remote_host', 'remote_logname', 'remote_user', 'time',
@@ -21,18 +22,6 @@ bots_contain = ('bot', 'crawler', 'spider', 'findlinks', 'feedfetcher',
                 'slurp', 'sensis', 'jeeves', 'nutch', 'harvest', 'larbin',
                 'archiver', 'ichiro', 'scrubby', 'silk', 'referee',
                 'webcollages', 'store')
-
-
-def key_gen(ns, fn, **kwargs):
-    fname = fn.__name__
-
-    def generate_key(*arg):
-        return fname + "_" + str(arg[0])
-    return generate_key
-
-
-region = make_region(
-    function_key_generator=key_gen).configure('dogpile.cache.memory')
 
 
 class Compose(object):

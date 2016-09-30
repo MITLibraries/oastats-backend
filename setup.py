@@ -30,6 +30,7 @@ setup(
         'pycountry',
         'pymongo',
         'requests',
+        'SQLAlchemy',
     ],
     entry_points={
         'console_scripts': [
