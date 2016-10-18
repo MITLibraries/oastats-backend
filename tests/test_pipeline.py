@@ -9,7 +9,7 @@ from pipeline.pipeline import (filter_by_date, filter_by_method, compose,
                                filter_by_ip, parse_into_dict, filter_bots,
                                filter_by_status, convert_datetime,
                                to_country, get_bitstream, add_identities,
-                               construct_pipeline,)
+                               to_csv, construct_pipeline,)
 
 
 @pytest.yield_fixture
@@ -72,7 +72,7 @@ def test_filter_bots_removes_requests():
 
 def test_convert_datetime_converts_to_iso_date():
     requests = convert_datetime([{'time': '31/Aug/2015:23:59:59 -0400'}])
-    assert next(requests) == {'time': '2015-08-31T23:59:59-04:00'}
+    assert next(requests)['time'] == '2015-08-31T23:59:59-04:00'
 
 
 def test_to_country_converts_ip_to_country_code(geolite):
@@ -119,3 +119,23 @@ def test_construct_pipeline_returns_generator_func(session, geolite, id_req,
         reqs = list(pipeline(logs))
         assert len(reqs) == 2
         assert reqs[0]['handle'] == 'http://example.com/1234'
+
+
+def test_to_csv_returns_formatted_row():
+    row = to_csv(['foo', 'bar', 'baz'])
+    assert row == 'foo,bar,baz'
+
+
+def test_to_csv_quotes_values():
+    row = to_csv(['foo,bar', 'The\n "Baz"'])
+    assert row == '"foo",bar","The"\n ""Baz"""'
+
+
+def test_to_csv_quotes_end_of_data():
+    row = to_csv(['\.'])
+    assert row == '"\."'
+
+
+def test_to_csv_returns_null_values():
+    row = to_csv(['foo', '', ''])
+    assert row == 'foo,,'

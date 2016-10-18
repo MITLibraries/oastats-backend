@@ -22,6 +22,7 @@ bots_contain = ('bot', 'crawler', 'spider', 'findlinks', 'feedfetcher',
                 'slurp', 'sensis', 'jeeves', 'nutch', 'harvest', 'larbin',
                 'archiver', 'ichiro', 'scrubby', 'silk', 'referee',
                 'webcollages', 'store')
+quoted = re.compile(r'([,\n\r"])')
 
 
 class Compose(object):
@@ -159,3 +160,15 @@ def construct_pipeline(session, reader, dspace, dates):
                    filter_by_ip,
                    _filter_by_date,
                    filter_by_method,)
+
+
+def quote_field(field):
+    value = quoted.sub(r'"\1', field)
+    if '"' in value or value == '\.':
+        value = '"{}"'.format(value)
+    return value
+
+
+def to_csv(request):
+    row = [quote_field(field) for field in request]
+    return ','.join(row)

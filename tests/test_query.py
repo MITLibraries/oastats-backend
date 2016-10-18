@@ -47,14 +47,14 @@ def test_get_or_create_returns_primary_key(conn):
 
 
 def test_get_author_returns_primary_key(conn):
-    p_key = get_author({'mit_id': '1234', 'name': 'Baz, Foo'}, conn)
+    p_key = get_author({'mitid': '1234', 'name': 'Baz, Foo'}, conn)
     assert p_key == conn.scalar(select([authors.c.id]))
 
 
 def test_get_author_caches_response(conn):
-    p_key = get_author({'mit_id': '1234', 'name': 'Bar, Foo'}, conn)
+    p_key = get_author({'mitid': '1234', 'name': 'Bar, Foo'}, conn)
     conn.close()
-    assert p_key == get_author({'mit_id': '1234', 'name': 'Bar, Foo'}, conn)
+    assert p_key == get_author({'mitid': '1234', 'name': 'Bar, Foo'}, conn)
 
 
 def test_get_dlc_returns_primary_key(conn):
@@ -78,8 +78,8 @@ def test_get_document_inserts_documents_without_identities(conn):
 
 
 def test_get_document_adds_document(conn):
-    a = [{'mit_id': '1234', 'name': 'Bar, Foo'},
-         {'mit_id': '5678', 'name': 'Baz, Foo'}]
+    a = [{'mitid': '1234', 'name': 'Bar, Foo'},
+         {'mitid': '5678', 'name': 'Baz, Foo'}]
     d = [{'canonical': 'The Foo Dept.', 'display': 'Foo'},
          {'canonical': 'The Bar Dept.', 'display': 'Bar'}]
     get_document('mock://handle.com/1', 'Some Foo', a, d, conn)
@@ -89,3 +89,10 @@ def test_get_document_adds_document(conn):
         [('Foo',), ('Bar',)]
     doc = conn.execute(select([documents])).first()
     assert doc['handle'] == 'mock://handle.com/1'
+
+
+def test_get_document_caches_response(conn):
+    p_key = get_document('mock://handle.com/1', 'Some Foo', [], [], conn)
+    conn.close()
+    assert p_key == get_document('mock://handle.com/1', 'Some Foo', [], [],
+                                conn)

@@ -18,8 +18,8 @@ def get_or_create(conn, table, id_column, id, **kwargs):
 
 @region.cache_on_arguments()
 def get_author(author, conn):
-    return get_or_create(conn, authors, authors.c.mit_id, author['mit_id'],
-                         mit_id=author['mit_id'], name=author['name'])
+    return get_or_create(conn, authors, authors.c.mit_id, author['mitid'],
+                         mit_id=author['mitid'], name=author['name'])
 
 
 @region.cache_on_arguments()
@@ -29,10 +29,10 @@ def get_dlc(dlc, conn):
                          display_name=dlc['display'])
 
 
+@region.cache_on_arguments()
 def get_document(handle, title, authors, dlcs, conn):
     with conn.begin():
         author_ids = [get_author(author, conn) for author in authors]
-        print(author_ids)
         dlc_ids = [get_dlc(dlc, conn) for dlc in dlcs]
         p_key = conn.scalar(select([documents.c.id]).
                             where(documents.c.handle == handle))
