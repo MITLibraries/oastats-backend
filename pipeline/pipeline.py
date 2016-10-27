@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-import re
 from functools import partial, reduce
+import logging
+import re
+
 
 import arrow
 from geoip2.errors import AddressNotFoundError
 import pycountry
+import requests
 
 from pipeline.cache import region
 
@@ -23,6 +26,9 @@ bots_contain = ('bot', 'crawler', 'spider', 'findlinks', 'feedfetcher',
                 'archiver', 'ichiro', 'scrubby', 'silk', 'referee',
                 'webcollages', 'store')
 quoted = re.compile(r'([,\n\r"])')
+
+
+logger = logging.getLogger(__name__)
 
 
 class Compose(object):
@@ -57,13 +63,6 @@ def get_alpha3_code(alpha2):
     return country.alpha3
 
 
-def map_field(requests, field, func, new_field=None):
-    new_field = new_field or field
-    for r in requests:
-        r[new_field] = func(r[field])
-        yield r
-
-
 def to_iso_date(date):
     dt = arrow.get(date, 'DD/MMM/YYYY:HH:mm:ss Z')
     return dt.isoformat()
@@ -73,8 +72,7 @@ def to_country(ip_address, reader):
     alpha2 = get_alpha2_code(ip_address, reader)
     if alpha2 in ('XA', 'XS', 'XX'):
         return 'XXX'
-    else:
-        return get_alpha3_code(alpha2)
+    return get_alpha3_code(alpha2)
 
 
 def filter_by_date(lines, dates=None):
@@ -119,16 +117,33 @@ def filter_bots(requests):
 
 
 def convert_datetime(requests):
-    return map_field(requests, 'time', to_iso_date)
+    for request in requests:
+        try:
+            dt = to_iso_date(request.get('time'))
+            request['time'] = dt
+            yield request
+        except arrow.parser.ParserError as e:
+            logger.warn(e)
 
 
-def add_country(requests, func):
-    return map_field(requests, 'remote_host', func, new_field='country')
+def add_country(requests, reader):
+    for request in requests:
+        try:
+            ccode = to_country(request.get('remote_host'), reader)
+            request['country'] = ccode
+            yield request
+        except (ValueError, KeyError) as e:
+            logger.warn(e)
 
 
 @region.cache_on_arguments()
 def get_bitstream(handle, svc_url, session):
     r = session.get(svc_url, params={'handle': handle})
+    try:
+        r.raise_for_status()
+    except requests.HTTPError as e:
+        logger.warn(e)
+        return None
     return r.json()
 
 
@@ -136,7 +151,7 @@ def add_identities(requests, svc_url, session):
     for request in requests:
         handle = request['request_url'].split("/", 2).pop()
         data = get_bitstream(handle, svc_url, session)
-        if data.get('success'):
+        if data and data.get('success'):
             request['dlcs'] = data.get('departments')
             request['handle'] = data.get('uri')
             request['title'] = data.get('title')
@@ -146,8 +161,7 @@ def add_identities(requests, svc_url, session):
 
 
 def construct_pipeline(session, reader, dspace, dates):
-    _to_country = partial(to_country, reader=reader)
-    _add_country = partial(add_country, func=_to_country)
+    _add_country = partial(add_country, reader=reader)
     _filter_by_date = partial(filter_by_date, dates=dates)
     _add_identities = partial(add_identities, svc_url=dspace, session=session)
 

@@ -9,7 +9,7 @@ from pipeline.pipeline import (filter_by_date, filter_by_method, compose,
                                filter_by_ip, parse_into_dict, filter_bots,
                                filter_by_status, convert_datetime,
                                to_country, get_bitstream, add_identities,
-                               to_csv, construct_pipeline,)
+                               to_csv, construct_pipeline, add_country)
 
 
 @pytest.yield_fixture
@@ -75,12 +75,23 @@ def test_convert_datetime_converts_to_iso_date():
     assert next(requests)['time'] == '2015-08-31T23:59:59-04:00'
 
 
+def test_convert_datetime_skips_invalid_dates():
+    reqs = convert_datetime([{'time': 'foobar'}])
+    assert not list(reqs)
+
+
 def test_to_country_converts_ip_to_country_code(geolite):
     assert to_country('18.1.1.1', geolite) == 'USA'
 
 
 def test_to_country_uses_xxx_for_non_countries(geolite):
     assert to_country('127.0.0.1', geolite) == 'XXX'
+
+
+def test_add_country_skips_requests_without_valid_country(geolite):
+    reqs = add_country([{'remote_host': 'foobar'},
+                        {'remote_host': '127.0.0.1'}], geolite)
+    assert list(reqs) == [{'remote_host': '127.0.0.1', 'country': 'XXX'}]
 
 
 def test_get_bitstream_returns_json(session):
@@ -98,6 +109,13 @@ def test_get_bistream_caches_requests(session):
         assert m.call_count == 1
 
 
+def test_get_bitstream_returns_none_on_failure(session):
+    with requests_mock.Mocker() as m:
+        m.get('mock://example.com', status_code=500)
+        bs = get_bitstream('123.4/5', 'mock://example.com/', session)
+        assert bs is None
+
+
 def test_add_identities_adds_new_data(session, id_req):
     with requests_mock.Mocker() as m:
         m.get('mock://example.com', json=id_req)
@@ -108,6 +126,14 @@ def test_add_identities_adds_new_data(session, id_req):
         assert r['dlcs'] == id_req['departments']
         assert r['authors'] == id_req['ids'][0]
         assert r['handle'] == id_req['uri']
+
+
+def test_add_identities_skip_bad_identities(session):
+    with requests_mock.Mocker() as m:
+        m.get('mock://example.com', status_code=500)
+        reqs = add_identities([{'request_url': '/123.4/5'}],
+                              'mock://example.com/', session)
+        assert not list(reqs)
 
 
 def test_construct_pipeline_returns_generator_func(session, geolite, id_req,

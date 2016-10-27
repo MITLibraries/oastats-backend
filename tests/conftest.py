@@ -7,7 +7,13 @@ import geoip2.database
 import maxminddb.const
 import pytest
 
+from pipeline.cache import region
 from pipeline.db import engine, metadata
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    region.invalidate()
 
 
 @pytest.yield_fixture

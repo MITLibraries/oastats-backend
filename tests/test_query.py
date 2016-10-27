@@ -5,15 +5,7 @@ import pytest
 from sqlalchemy import select, func
 
 from pipeline.db import (engine, authors, dlcs, documents)
-from pipeline.cache import region
 from pipeline.query import (get_or_create, get_author, get_dlc, get_document)
-
-
-@pytest.yield_fixture(autouse=True)
-def clear_cache():
-    region.invalidate()
-    yield
-    region.invalidate()
 
 
 @pytest.yield_fixture
