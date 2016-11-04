@@ -25,7 +25,6 @@ bots_contain = ('bot', 'crawler', 'spider', 'findlinks', 'feedfetcher',
                 'slurp', 'sensis', 'jeeves', 'nutch', 'harvest', 'larbin',
                 'archiver', 'ichiro', 'scrubby', 'silk', 'referee',
                 'webcollages', 'store')
-quoted = re.compile(r'([,\n\r"])')
 
 
 logger = logging.getLogger(__name__)
@@ -177,8 +176,9 @@ def construct_pipeline(session, reader, dspace, dates):
 
 
 def quote_field(field):
-    value = quoted.sub(r'"\1', field)
-    if '"' in value or value == '\.':
+    quotable = (',', '"', '\n', '\r')
+    value = field.replace('"', '""')
+    if any([s in value for s in quotable]) or value == '\.':
         value = '"{}"'.format(value)
     return value
 
