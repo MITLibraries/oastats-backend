@@ -154,7 +154,7 @@ def test_to_csv_returns_formatted_row():
 
 def test_to_csv_quotes_values():
     row = to_csv(['foo,bar', 'The\n "Baz"'])
-    assert row == '"foo",bar","The"\n ""Baz"""'
+    assert row == '"foo,bar","The\n ""Baz"""'
 
 
 def test_to_csv_quotes_end_of_data():

@@ -122,7 +122,8 @@ def convert_datetime(requests):
             request['time'] = dt
             yield request
         except arrow.parser.ParserError as e:
-            logger.warn(e)
+            logger.warn("Could not parse date string {}".format(
+                        request.get('time')))
 
 
 def add_country(requests, reader):
@@ -132,7 +133,8 @@ def add_country(requests, reader):
             request['country'] = ccode
             yield request
         except (ValueError, KeyError) as e:
-            logger.warn(e)
+            logger.warn("Could not process host IP {}".format(
+                        request.get('remote_host')))
 
 
 @region.cache_on_arguments()

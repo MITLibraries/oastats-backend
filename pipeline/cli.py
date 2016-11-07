@@ -2,6 +2,8 @@
 from __future__ import absolute_import
 from contextlib import closing
 import fileinput
+import logging
+import logging.config
 
 import arrow
 import click
@@ -9,9 +11,35 @@ import geoip2.database
 import maxminddb.const
 import requests
 
-from pipeline.db import engine
+from pipeline.db import engine, metadata
 from pipeline.pipeline import construct_pipeline, to_csv
 from pipeline.query import get_document
+from pipeline.summary import author
+
+
+logger = logging.getLogger(__name__)
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'full': {
+            'format': '%(levelname)s [%(asctime)s] %(message)s in %(filename)s:%(lineno)d '
+        }
+    },
+    'handlers': {
+        'console': {
+            'formatter': 'full',
+            'class': 'logging.StreamHandler',
+            'level': 'WARN',
+            'stream': 'ext://sys.stderr'
+        }
+    },
+    'loggers': {
+        'pipeline': {
+            'handlers': ['console']
+        }
+    }
+})
 
 
 @click.group()
@@ -53,3 +81,15 @@ def pipeline(database, files, month, geo_ip, dspace):
                            request['time'],
                            str(doc_id))
                     click.echo(to_csv(req))
+
+
+@main.command()
+@click.argument('command', type=click.Choice(['create', 'drop']))
+@click.argument('database')
+def db(command, database):
+    engine.configure(database)
+    if command == 'create':
+        metadata.create_all(engine())
+    elif command == 'drop':
+        if click.confirm('Are you sure you want to drop the database?'):
+            metadata.drop_all(engine())
