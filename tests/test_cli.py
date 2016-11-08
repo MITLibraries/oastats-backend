@@ -21,7 +21,7 @@ def dspace(id_req):
 def test_pipeline_returns_requests(geolite_db, log_file):
     res = CliRunner().invoke(main, ['pipeline', '--geo-ip', geolite_db,
                                     '--dspace', 'mock://example.com/ws/',
-                                    'sqlite://', log_file])
+                                    '--database', 'sqlite://', log_file])
     assert res.exit_code == 0
     req = res.output.split('\n')[0]
     assert req == '200,USA,/openaccess-disseminate/1234.5/6789,-,'\
@@ -32,7 +32,8 @@ def test_pipeline_returns_requests(geolite_db, log_file):
 def test_pipeline_filters_requests(geolite_db, log_file):
     res = CliRunner().invoke(main, ['pipeline', '--geo-ip', geolite_db,
                                     '--dspace', 'mock://example.com/ws/',
-                                    '-m', 'Aug/2015', 'sqlite://', log_file])
+                                    '-m', 'Aug/2015', '--database',
+                                    'sqlite://', log_file])
     assert res.exit_code == 0
     assert len(res.output.strip().split('\n')) == 2
 
@@ -41,7 +42,7 @@ def test_pipeline_reads_from_stdin(geolite_db, logs):
     res = CliRunner().invoke(main, ['pipeline', '--geo-ip', geolite_db,
                                     '--dspace', 'mock://example.com/ws/',
                                     '-m', 'Aug/2015', '-m', 'Sep/2015',
-                                    'sqlite://'],
+                                    '--database', 'sqlite://'],
                              input=logs.read())
     assert res.exit_code == 0
     assert len(res.output.strip().split('\n')) == 3

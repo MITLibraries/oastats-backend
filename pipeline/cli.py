@@ -48,7 +48,6 @@ def main():
 
 
 @main.command()
-@click.argument('database')
 @click.argument('files', nargs=-1, type=click.Path(exists=True,
                                                    resolve_path=True,
                                                    allow_dash=True))
@@ -56,7 +55,8 @@ def main():
 @click.option('--geo-ip', default='GeoLite2-Country.mmdb',
               type=click.Path(exists=True, resolve_path=True))
 @click.option('--dspace', default='https://dspace.mit.edu/ws/oastats')
-def pipeline(database, files, month, geo_ip, dspace):
+@click.option('--database', envvar='OASTATS_DATABASE')
+def pipeline(files, month, geo_ip, dspace, database):
     if not month:
         month = []
     dates = [arrow.get(d, ['MMM/YYYY', 'MMM-YYYY']) for d in month]
@@ -85,7 +85,7 @@ def pipeline(database, files, month, geo_ip, dspace):
 
 @main.command()
 @click.argument('command', type=click.Choice(['create', 'drop']))
-@click.argument('database')
+@click.argument('--database', envvar='OASTATS_DATABASE')
 def db(command, database):
     engine.configure(database)
     if command == 'create':
