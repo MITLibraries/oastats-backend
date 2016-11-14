@@ -9,12 +9,13 @@ import arrow
 import click
 import geoip2.database
 import maxminddb.const
+import pymongo
 import requests
 
 from pipeline.db import engine, metadata
 from pipeline.pipeline import construct_pipeline, to_csv
 from pipeline.query import get_document
-from pipeline.summary import author
+from pipeline.summary import author_objs, dlc_objs, handle_objs, overall
 
 
 logger = logging.getLogger(__name__)
@@ -84,8 +85,31 @@ def pipeline(files, month, geo_ip, dspace, database):
 
 
 @main.command()
+@click.option('--database', envvar='OASTATS_DATABASE')
+@click.option('--mongo', default='mongodb://localhost:27017')
+@click.option('--mongo-db', default='oastats')
+@click.option('--mongo-coll', default='summary')
+def summary(database, mongo, mongo_db, mongo_coll):
+    engine.configure(database)
+    client = MongoClient(mongo)
+    collection = client['mongo_db']['mongo_coll']
+    with closing(engine().connect()) as conn:
+        for author in author_objs(conn):
+            collection.update_one({'_id': author['_id']},
+                                  {'$set': author}, upsert=True)
+        for dlc in dlc_objs(conn):
+            collection.update_one({'_id': dlc['_id']},
+                                  {'$set': dlc}, upsert=True)
+        for handle in handle_objs(conn):
+            collection.update_one({'_id': handle['_id']},
+                                  {'$set': handle}, upsert=True)
+        collection.update_one({'_id': 'Overall'},
+                              {'$set': overall(conn)}, upsert=True)
+
+
+@main.command()
 @click.argument('command', type=click.Choice(['create', 'drop']))
-@click.argument('--database', envvar='OASTATS_DATABASE')
+@click.option('--database', envvar='OASTATS_DATABASE')
 def db(command, database):
     engine.configure(database)
     if command == 'create':
