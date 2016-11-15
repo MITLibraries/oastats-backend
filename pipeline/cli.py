@@ -91,8 +91,8 @@ def pipeline(files, month, geo_ip, dspace, database):
 @click.option('--mongo-coll', default='summary')
 def summary(database, mongo, mongo_db, mongo_coll):
     engine.configure(database)
-    client = MongoClient(mongo)
-    collection = client['mongo_db']['mongo_coll']
+    client = pymongo.MongoClient(mongo)
+    collection = client[mongo_db][mongo_coll]
     with closing(engine().connect()) as conn:
         for author in author_objs(conn):
             collection.update_one({'_id': author['_id']},
