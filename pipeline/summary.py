@@ -23,7 +23,7 @@ def dlc_objs(conn):
 def handle_objs(conn):
     sql = select([documents])
     for d in conn.execute(sql):
-        yield handle(d['doc_id'])
+        yield handle(d['document_id'])
 
 
 def author(mit_id, conn):
@@ -146,8 +146,7 @@ def handle(doc_id, conn):
                 ])\
             .where(documents.c.id==bindparam('doc_id'))
     parents = select([authors.c.name, authors.c.mit_id])\
-                .join(documents_authors)\
-                .join(documents)\
+              .select_from(authors.join(documents_authors).join(documents))\
               .where(documents.c.id==bindparam('doc_id'))
     countries = select([requests.c.country, func.count().label('downloads')])\
                 .where(requests.c.document_id==bindparam('doc_id'))\
@@ -161,7 +160,6 @@ def handle(doc_id, conn):
     res = conn.execute(totals, doc_id=doc_id).first()
     handle_obj['_id'] = res['handle']
     handle_obj['title'] = res['title']
-    handle_obj['size'] = res['size']
     handle_obj['downloads'] = res['downloads']
     res = conn.execute(parents, doc_id=doc_id)
     for row in res:
