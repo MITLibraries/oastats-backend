@@ -31,7 +31,7 @@ def test_filter_by_date_filters(logs):
 
 def test_filter_by_date_skips_filtering_if_no_date(logs):
     lines = list(filter_by_date(logs))
-    assert len(lines) == 10
+    assert len(lines) == 11
 
 
 def test_filter_by_method_filters(logs):

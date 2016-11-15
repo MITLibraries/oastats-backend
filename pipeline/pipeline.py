@@ -16,7 +16,7 @@ from pipeline.cache import region
 field_names = ('remote_host', 'remote_logname', 'remote_user', 'time',
                'request_method', 'request_url', 'request_http_version',
                'status', 'bytes', 'referer', 'user_agent')
-pattern = re.compile(r'(\S+) (\S+) (\S+) \[(.*?)\] "(\S+) '
+pattern = re.compile(r'(\S+) (\S+) (\S+) \[(\S+ \S+)\] "(\S+) '
                      r'(/openaccess-disseminate/[0-9.]+/[0-9]+) (\S+)" (\S+) '
                      r'(\S+) "(.*?)" "(.*)"')
 bots_startswith = ("java", "python", "libwww", "lwp-trivial", "htdig", "xenu",
