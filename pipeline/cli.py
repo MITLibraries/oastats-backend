@@ -13,7 +13,7 @@ import pymongo
 import requests
 
 from pipeline.db import engine, metadata
-from pipeline.pipeline import construct_pipeline, to_csv
+from pipeline.pipeline import construct_pipeline, to_csv, to_iso_date
 from pipeline.query import get_document
 from pipeline.summary import author_objs, dlc_objs, handle_objs, overall
 
@@ -117,3 +117,30 @@ def db(command, database):
     elif command == 'drop':
         if click.confirm('Are you sure you want to drop the database?'):
             metadata.drop_all(engine())
+
+
+@main.command()
+@click.option('--database', envvar='OASTATS_DATABASE')
+@click.option('--mongo', default='mongodb://localhost:27017')
+@click.option('--mongo-db', default='oastats')
+@click.option('--mongo-coll', default='requests')
+def load(database, mongo, mongo_db, mongo_coll):
+    engine.configure(database)
+    client = pymongo.MongoClient(mongo)
+    collection = client[mongo_db][mongo_coll]
+    with closing(engine().connect()) as conn:
+        for request in collection.find().sort('time',
+                                              pymongo.DESCENDING):
+            doc_id = get_document(request['handle'],
+                                  request['title'],
+                                  request.get('authors', []),
+                                  request.get('dlcs', []),
+                                  conn)
+            req = (request['status'],
+                   request['country'],
+                   request['request_url'],
+                   request.get('referer', ''),
+                   request.get('user_agent', ''),
+                   to_iso_date(request['time']),
+                   str(doc_id))
+            click.echo(to_csv(req))
