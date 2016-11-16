@@ -118,8 +118,8 @@ def dlc(dlc_id, conn):
     ### Check structure of this object, particularly the _id
     dlc_obj = {'type': 'dlc'}
     res = conn.execute(totals, dlc_id=dlc_id).first()
-    dlc_obj['_id'] = {'canonical_name': res['canonical_name'],
-                      'display_name': res['display_name']}
+    dlc_obj['_id'] = {'canonical': res['canonical_name'],
+                      'display': res['display_name']}
     dlc_obj['size'] = res['size']
     dlc_obj['downloads'] = res['downloads']
     res = conn.execute(countries, dlc_id=dlc_id)
