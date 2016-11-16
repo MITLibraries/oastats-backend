@@ -32,8 +32,9 @@ def get_dlc(dlc, conn):
 @region.cache_on_arguments()
 def get_document(handle, title, authors, dlcs, conn):
     with conn.begin():
-        author_ids = [get_author(author, conn) for author in authors]
-        dlc_ids = [get_dlc(dlc, conn) for dlc in dlcs]
+        author_ids = [get_author(author, conn) for author in authors
+                      if valid_author(author)]
+        dlc_ids = [get_dlc(dlc, conn) for dlc in dlcs if valid_dlc(dlc)]
         p_key = conn.scalar(select([documents.c.id]).
                             where(documents.c.handle == handle))
         if p_key is None:
@@ -51,3 +52,13 @@ def get_document(handle, title, authors, dlcs, conn):
                               for author
                               in author_ids])
         return p_key
+
+
+def valid_author(author):
+    return all(k in author for k in ('mitid', 'name')) and \
+           all(v for v in author.values())
+
+
+def valid_dlc(dlc):
+    return all(k in dlc for k in ('canonical', 'display')) and \
+           all(v for v in dlc.values())

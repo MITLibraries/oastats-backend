@@ -69,6 +69,18 @@ def test_get_document_inserts_documents_without_identities(conn):
     assert conn.scalar(select([dlcs])) is None
 
 
+def test_get_document_throws_out_incomplete_identities(conn):
+    a = [{'mitid': '1234', 'name': 'Bar, Foo'},
+         {'name': 'Baz, Foo'}]
+    d = [{'canonical': 'The Foo Dept.', 'display': 'Foo'},
+         {'display': 'Bar'}]
+    get_document('mock://handle.com/1', 'Some Bar', a, d, conn)
+    assert conn.execute(select([authors.c.name])).fetchall() == \
+        [('Bar, Foo',)]
+    assert conn.execute(select([dlcs.c.display_name])).fetchall() == \
+        [('Foo',)]
+
+
 def test_get_document_adds_document(conn):
     a = [{'mitid': '1234', 'name': 'Bar, Foo'},
          {'mitid': '5678', 'name': 'Baz, Foo'}]
