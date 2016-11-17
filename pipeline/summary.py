@@ -23,7 +23,7 @@ def dlc_objs(conn):
 def handle_objs(conn):
     sql = select([documents])
     for d in conn.execute(sql):
-        yield handle(d['document_id'])
+        yield handle(d['id'], conn)
 
 
 def author(mit_id, conn):
@@ -115,7 +115,6 @@ def dlc(dlc_id, conn):
             .select_from(requests_to_dlcs)\
             .where(dlcs.c.id==bindparam('dlc_id'))\
             .group_by(func.date_trunc('day', requests.c.datetime))
-    ### Check structure of this object, particularly the _id
     dlc_obj = {'type': 'dlc'}
     res = conn.execute(totals, dlc_id=dlc_id).first()
     dlc_obj['_id'] = {'canonical': res['canonical_name'],
@@ -141,7 +140,7 @@ def handle(doc_id, conn):
                 documents.c.handle,
                 select([func.count()])
                     .select_from(requests)
-                    .where(documents.c.id==bindparam('doc_id'))
+                    .where(requests.c.document_id==bindparam('doc_id'))
                     .label('downloads')
                 ])\
             .where(documents.c.id==bindparam('doc_id'))

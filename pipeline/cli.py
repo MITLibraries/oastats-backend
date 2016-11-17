@@ -138,9 +138,9 @@ def load(database, mongo, mongo_db, mongo_coll):
                                   conn)
             req = (request['status'],
                    request['country'],
-                   request['request_url'],
+                   request['request'],
                    request.get('referer', ''),
                    request.get('user_agent', ''),
-                   to_iso_date(request['time']),
+                   request['time'].isoformat(),
                    str(doc_id))
             click.echo(to_csv(req))
