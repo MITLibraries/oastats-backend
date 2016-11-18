@@ -1,217 +1,203 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from operator import itemgetter
-from functools import partial
-from concurrent import futures
-try:
-    import itertools.ifilter as filter
-except ImportError:
-    pass
 
-import pysolr
+from sqlalchemy import bindparam
+from sqlalchemy.sql import select, func
 
-from pipeline.request_writer import BufferedSolrWriter
+from pipeline.db import (authors, documents_authors, requests, documents,
+                         dlcs, documents_dlcs)
 
 
-def index(requests, solr_url):
-    with BufferedSolrWriter(solr_url) as solr:
-        for request in requests:
-            doc = {
-                'handle': request.get('handle'),
-                'title': request.get('title'),
-                'country': request.get('country'),
-                'time': request.get('time'),
-                'dlc_display': list(map(itemgetter('display'),
-                                        request.get('dlcs', []))),
-                'dlc_canonical': list(map(itemgetter('canonical'),
-                                          request.get('dlcs', []))),
-                'author_id': list(map(itemgetter('mitid'),
-                                      request.get('authors', []))),
-                'author_name': list(map(itemgetter('name'),
-                                        request.get('authors', []))),
-                'author': list(map(join_author, request.get('authors', [])))
-            }
-            solr.write(doc)
+def author_objs(conn):
+    sql = select([authors])
+    for a in conn.execute(sql):
+        yield author(a['mit_id'], conn)
 
 
-def summarize(requests, summary, solr_url, end_date, max_workers):
-    solr = pysolr.Solr(solr_url)
-    with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        job = executor.submit(query_solr, solr, end_date, *get_overall())
-        callback = partial(update, summary, {'_id': 'Overall'}, create_overall)
-        job.add_done_callback(callback)
-        for author in authors(requests):
-            job = executor.submit(query_solr, solr, end_date, *get_author(author))
-            callback = partial(update, summary, {'_id': author}, create_author)
-            job.add_done_callback(callback)
-        for dlc in requests.distinct("dlcs"):
-            job = executor.submit(query_solr, solr, end_date, *get_dlc(dlc))
-            callback = partial(update, summary, {'_id': dlc}, create_dlc)
-            job.add_done_callback(callback)
-        for handle in requests.distinct("handle"):
-            job = executor.submit(query_solr, solr, end_date, *get_handle(handle))
-            callback = partial(update, summary, {'_id': handle}, create_handle)
-            job.add_done_callback(callback)
+def dlc_objs(conn):
+    sql = select([dlcs])
+    for d in conn.execute(sql):
+        yield dlc(d['id'], conn)
 
 
-def update(summary, ident, formatter, result):
-    query = formatter(result)
-    summary.update_one(ident, query, True)
+def handle_objs(conn):
+    sql = select([documents])
+    for d in conn.execute(sql):
+        yield handle(d['id'], conn)
 
 
-def authors(requests):
-    return filter(lambda x: x.get('mitid'), requests.distinct('authors'))
+def author(mit_id, conn):
+    """
+    Returns an author object for insertion into mongo summary collection.
 
-
-def query_solr(solr, end_date, query, params={}):
-    kwargs = {
-        "facet": 'true',
-        "facet.field": "country",
-        "f.country.facet.limit": 250,
-        "facet.range": "time",
-        "facet.range.start": "2010-08-01T00:00:00Z",
-        "facet.range.end": end_date,
-        "facet.range.gap": "+1DAY",
-    }
-    kwargs.update(params)
-    return solr.search(query, **kwargs)
-
-
-def get_author(author):
-    query = 'author_id:"{0}"'.format(author['mitid'])
-    params = {
-        "rows": 0,
-        "group": "true",
-        "group.field": "handle",
-        "group.ngroups": "true",
-    }
-    return query, params
-
-
-def create_author(future):
-    result = future.result()
-    return {
-        "$set": {
-            "type": "author",
-            "size": result.grouped['handle']['ngroups'],
-            "downloads": result.grouped['handle']['matches'],
-            "countries": dictify('country',
-                                 result.facets['facet_fields']['country']),
-            "dates": dictify('date',
-                             result.facets['facet_ranges']['time']['counts'])
-        }
-    }
-
-
-def get_dlc(dlc):
-    query = 'dlc_canonical:"{0}"'.format(dlc['canonical'])
-    params = {
-        "rows": 0,
-        "group": "true",
-        "group.field": "handle",
-        "group.ngroups": "true",
-    }
-    return query, params
-
-
-def create_dlc(future):
-    result = future.result()
-    return {
-        "$set": {
-            "type": "dlc",
-            "size": result.grouped['handle']['ngroups'],
-            "downloads": result.grouped['handle']['matches'],
-            "countries": dictify('country',
-                                 result.facets['facet_fields']['country']),
-            "dates": dictify('date',
-                             result.facets['facet_ranges']['time']['counts'])
-        }
-    }
-
-
-def get_handle(handle):
-    query = 'handle:"{0}"'.format(handle)
-    params = {"rows": 1}
-    return query, params
-
-
-def create_handle(future):
-    result = future.result()
-    hdl = result.docs[0]
-    return {
-        '$set': {
-            'type': 'handle',
-            'title': hdl['title'],
-            'downloads': result.hits,
-            'countries': dictify('country',
-                                 result.facets['facet_fields']['country']),
-            'dates': dictify('date',
-                             result.facets['facet_ranges']['time']['counts']),
-            'parents': list(map(split_author, hdl.get('author', [])))
-        }
-    }
-
-
-def get_overall():
-    params = {
-        "rows": 0,
-        "group": "true",
-        "group.field": "handle",
-        "group.ngroups": "true",
-    }
-    return '*:*', params
-
-
-def create_overall(future):
-    result = future.result()
-    return {
-        '$set': {
-            'type': 'overall',
-            'size': result.grouped['handle']['ngroups'],
-            'downloads': result.grouped['handle']['matches'],
-            'countries': dictify('country',
-                                 result.facets['facet_fields']['country']),
-            'dates': dictify('date',
-                             result.facets['facet_ranges']['time']['counts']),
-        }
-    }
-
-
-def dictify(field, counts):
-    """Turn Solr facet counts into compound Mongo field.
-
-    This is used to turn the country and date facet counts into the format
-    required for the Mongo summary collection. For example::
-
-        [{
-            'country': 'USA',
-            'downloads': 100
-        }, {
-            'country': 'FRA',
-            'downloads': 51
-        }]
-
-    Dates are current treated as a string, so only the first 10 characters
-    of the date are taken (YYYY-MM-DD), rather than converting to a datetime
-    object.
-
-    :param field: field being summarized--either `country` or `date`
-    :param counts: list of Solr facet counts in format `[facet, count, ...]`
+    The format is as follows:
+        {"_id": {"name": <name>, "mitid": <mitid>},
+         "type": "author",
+         "size": <num docs>,
+         "downloads": <num downloads>,
+         "countries": [
+            {"country": <3 ltr code>, "downloads": <num downloads>},...
+         ]
+         "dates": [
+            {"date": <YYYY-MM-DD>, "downloads": <num>},...
+         ]}
     """
 
-    return [
-        {field: f[:10], "downloads": i} for f, i in zip(counts[::2], counts[1::2])
-    ]
+    requests_to_authors = requests.join(documents)\
+                                  .join(documents_authors)\
+                                  .join(authors)
+
+    totals = select([
+                authors.c.mit_id,
+                authors.c.name,
+                select([func.count()])
+                    .select_from(documents_authors.join(authors))
+                    .where(authors.c.mit_id==bindparam('mit_id'))
+                    .label('size'),
+                select([func.count()])
+                    .select_from(requests_to_authors)
+                    .where(authors.c.mit_id==bindparam('mit_id'))
+                    .label('downloads')
+                ])\
+             .where(authors.c.mit_id==bindparam('mit_id'))
+    countries = select([requests.c.country, func.count().label('downloads')])\
+                .select_from(requests_to_authors)\
+                .where(authors.c.mit_id==bindparam('mit_id'))\
+                .group_by(requests.c.country)
+    dates = select([
+                func.date_trunc('day', requests.c.datetime).label('date'),
+                func.count().label('downloads')])\
+            .select_from(requests_to_authors)\
+            .where(authors.c.mit_id==bindparam('mit_id'))\
+            .group_by(func.date_trunc('day', requests.c.datetime))
+
+    author_obj = {'type': 'author'}
+    res = conn.execute(totals, mit_id=mit_id).first()
+    author_obj['_id'] = {'name': res['name'], 'mitid': res['mit_id']}
+    author_obj['size'] = res['size']
+    author_obj['downloads'] = res['downloads']
+    res = conn.execute(countries, mit_id=mit_id)
+    for row in res:
+        author_obj.setdefault('countries', [])\
+            .append({'country': row['country'], 'downloads': row['downloads']})
+    res = conn.execute(dates, mit_id=mit_id)
+    for row in res:
+        author_obj.setdefault('dates', [])\
+            .append({'date': row['date'].strftime('%Y-%m-%d'),
+                     'downloads': row['downloads']})
+    return author_obj
 
 
-def split_author(author):
-    try:
-        mitid, name = author.split(':', 1)
-    except ValueError:
-        return
-    if mitid and name:
-        return {'mitid': mitid, 'name': name}
+def dlc(dlc_id, conn):
+    requests_to_dlcs = requests.join(documents)\
+                               .join(documents_dlcs)\
+                               .join(dlcs)
+    totals = select([
+                dlcs.c.canonical_name,
+                dlcs.c.display_name,
+                select([func.count()])
+                    .select_from(documents_dlcs.join(dlcs))
+                    .where(dlcs.c.id==bindparam('dlc_id'))
+                    .label('size'),
+                select([func.count()])
+                    .select_from(requests_to_dlcs)
+                    .where(dlcs.c.id==bindparam('dlc_id'))
+                    .label('downloads')
+                ])\
+            .where(dlcs.c.id==bindparam('dlc_id'))
+    countries = select([requests.c.country, func.count().label('downloads')])\
+                .select_from(requests_to_dlcs)\
+                .where(dlcs.c.id==bindparam('dlc_id'))\
+                .group_by(requests.c.country)
+    dates = select([
+                func.date_trunc('day', requests.c.datetime).label('date'),
+                func.count().label('downloads')])\
+            .select_from(requests_to_dlcs)\
+            .where(dlcs.c.id==bindparam('dlc_id'))\
+            .group_by(func.date_trunc('day', requests.c.datetime))
+    dlc_obj = {'type': 'dlc'}
+    res = conn.execute(totals, dlc_id=dlc_id).first()
+    dlc_obj['_id'] = {'canonical': res['canonical_name'],
+                      'display': res['display_name']}
+    dlc_obj['size'] = res['size']
+    dlc_obj['downloads'] = res['downloads']
+    res = conn.execute(countries, dlc_id=dlc_id)
+    for row in res:
+        dlc_obj.setdefault('countries', [])\
+            .append({'country': row['country'],
+                     'downloads': row['downloads']})
+    res = conn.execute(dates, dlc_id=dlc_id)
+    for row in res:
+        dlc_obj.setdefault('dates', [])\
+            .append({'date': row['date'].strftime('%Y-%m-%d'),
+                     'downloads': row['downloads']})
+    return dlc_obj
 
 
-def join_author(author):
-    return "%s:%s" % (author.get('mitid', ''), author.get('name', ''))
+def handle(doc_id, conn):
+    totals = select([
+                documents.c.title,
+                documents.c.handle,
+                select([func.count()])
+                    .select_from(requests)
+                    .where(requests.c.document_id==bindparam('doc_id'))
+                    .label('downloads')
+                ])\
+            .where(documents.c.id==bindparam('doc_id'))
+    parents = select([authors.c.name, authors.c.mit_id])\
+              .select_from(authors.join(documents_authors).join(documents))\
+              .where(documents.c.id==bindparam('doc_id'))
+    countries = select([requests.c.country, func.count().label('downloads')])\
+                .where(requests.c.document_id==bindparam('doc_id'))\
+                .group_by(requests.c.country)
+    dates = select([
+                func.date_trunc('day', requests.c.datetime).label('date'),
+                func.count().label('downloads')])\
+            .where(requests.c.document_id==bindparam('doc_id'))\
+            .group_by(func.date_trunc('day', requests.c.datetime))
+    handle_obj = {'type': 'handle'}
+    res = conn.execute(totals, doc_id=doc_id).first()
+    handle_obj['_id'] = res['handle']
+    handle_obj['title'] = res['title']
+    handle_obj['downloads'] = res['downloads']
+    res = conn.execute(parents, doc_id=doc_id)
+    for row in res:
+        handle_obj.setdefault('parents', [])\
+            .append({'mit_id': row['mit_id'], 'name': row['name']})
+    res = conn.execute(countries, doc_id=doc_id)
+    for row in res:
+        handle_obj.setdefault('countries', [])\
+            .append({'country': row['country'],
+                     'downloads': row['downloads']})
+    res = conn.execute(dates, doc_id=doc_id)
+    for row in res:
+        handle_obj.setdefault('dates', [])\
+            .append({'date': row['date'].strftime('%Y-%m-%d'),
+                     'downloads': row['downloads']})
+    return handle_obj
+
+
+def overall(conn):
+    totals = select([
+        select([func.count()]).select_from(requests).label('downloads'),
+        select([func.count()]).select_from(documents).label('size')])
+    countries = select([requests.c.country, func.count().label('downloads')])\
+                    .group_by(requests.c.country)
+    dates = select([func.date_trunc('day', requests.c.datetime).label('date'),
+                    func.count().label('downloads')])\
+                .group_by(func.date_trunc('day', requests.c.datetime))
+    overall_obj = {'type': 'overall'}
+    res = conn.execute(totals).first()
+    overall_obj['downloads'] = res['downloads']
+    overall_obj['size'] = res['size']
+    res = conn.execute(countries)
+    for row in res:
+        overall_obj.setdefault('countries', [])\
+            .append({'country': row['country'],
+                     'downloads': row['downloads']})
+    res = conn.execute(dates)
+    for row in res:
+        overall_obj.setdefault('dates', [])\
+            .append({'date': row['date'].strftime('%Y-%m-%d'),
+                     'downloads': row['downloads']})
+    return overall_obj

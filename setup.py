@@ -13,7 +13,7 @@ with io.open('LICENSE') as f:
 
 setup(
     name='oastats-pipeline',
-    version='0.1.0',
+    version='1.0.1',
     description='Generate download statistics for the Open Access collection',
     long_description=__doc__,
     url='https://github.com/MITLibraries/oastats-backend',
@@ -22,25 +22,16 @@ setup(
     author_email='mgraves@mit.edu',
     packages=find_packages(exclude=['tests']),
     install_requires=[
-        'PyYAML',
-        'apache-log-parser',
         'arrow',
         'click',
-        'futures',
+        'dogpile.cache',
         'geoip2',
         'maxminddb',
         'pycountry',
         'pymongo',
-        'pysolr',
-        'python-dateutil',
         'requests',
-        'six',
-        'ua-parser<0.5',
-        'user-agents',
+        'SQLAlchemy',
     ],
-    extras_require={
-        ':python_version=="2.7"': ['ipaddr'],
-    },
     entry_points={
         'console_scripts': [
             'oastats = pipeline.cli:main',
@@ -54,7 +45,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ]
 )
