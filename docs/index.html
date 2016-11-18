@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to OAStats Backend’s documentation! &#8212; OAStats Backend 2.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="OAStats Backend 2.0.0 documentation" href="#" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-oastats-backend-s-documentation">
+<h1>Welcome to OAStats Backend&#8217;s documentation!<a class="headerlink" href="#welcome-to-oastats-backend-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>This is a command line application that will process the Apache logs for Dspace and generate download statistics for the OA collection.</p>
+<p>The current version is an intermediate step in moving off Mongo to PostGres and some of the functionality will be removed once the migration is complete. As such, a separate step is still required to generate a summary collection in Mongo, but this is now done using the data from the PostGres databse.</p>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Use <code class="docutils literal"><span class="pre">pip</span></code> to install into a virtualenv:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>(oastats)$ pip install \
+    https://github.com/MITLibraries/oastats-backend/zipball/master
+</pre></div>
+</div>
+<p>This will make an <code class="docutils literal"><span class="pre">oastats</span></code> command available when your virtualenv is active.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal"><span class="pre">oastats</span></code> command has four subcommands: <code class="docutils literal"><span class="pre">db</span></code>, <code class="docutils literal"><span class="pre">load</span></code>, <code class="docutils literal"><span class="pre">pipeline</span></code> and <code class="docutils literal"><span class="pre">summary</span></code>. The full documentation for each command can be accessed with:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>(oastats)$ oastats &lt;subcommand&gt; --help
+</pre></div>
+</div>
+<p>Each subcommand will need to connect to the PostGres database. This can be done by providing a valid <a class="reference external" href="http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls">SQLAlchemy Database URI</a> to the <code class="docutils literal"><span class="pre">--oastats-database</span></code> option. You can also pass this as an environment variable instead of as a command line option using the <code class="docutils literal"><span class="pre">OASTATS_DATABASE</span></code> variable.</p>
+<div class="section" id="creating-the-database">
+<h3>Creating the Database<a class="headerlink" href="#creating-the-database" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="pipeline.cli.db">
+<code class="descclassname">pipeline.cli.</code><code class="descname">db</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.cli.db" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create/drop the PostGres database tables.</p>
+<p>This will create or drop the database tables depending on which command
+is provided (<code class="docutils literal"><span class="pre">create</span></code> or <code class="docutils literal"><span class="pre">drop</span></code>). Make sure the database exists
+first.</p>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>(oastats)$ oastats db create
+</pre></div>
+</div>
+</dd></dl>
+
+<p>Full command documentation:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>(oastats)$ oastats db --help
+</pre></div>
+</div>
+</div>
+<div class="section" id="migrating-the-mongo-data">
+<h3>Migrating the Mongo Data<a class="headerlink" href="#migrating-the-mongo-data" title="Permalink to this headline">¶</a></h3>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p class="last">This subcommand will be removed once the data has been migrated.</p>
+</div>
+<dl class="function">
+<dt id="pipeline.cli.load">
+<code class="descclassname">pipeline.cli.</code><code class="descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.cli.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the Mongo requests collection into PostGres.</p>
+<p>The entire Mongo requests collection will be iterated over and loaded
+into PostGres. The collection is sorted by time descending before being
+iterated. This is done in order to get the most recent (and complete)
+identitiy data from the denormalized Mongo database. It is recommended
+to make sure the requests collection has a descending index on the time
+field before running:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>
+(oastats)$ mongo oastats --eval \
+    &quot;db.requests.createIndex({time: -1})&quot;
+(oastats)$ oastats load
+</pre></div>
+</div>
+</dd></dl>
+
+<p>Full command documentation:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>(oastats)$ oastats load --help
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-the-pipeline">
+<h3>Running the Pipeline<a class="headerlink" href="#running-the-pipeline" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="pipeline.cli.pipeline">
+<code class="descclassname">pipeline.cli.</code><code class="descname">pipeline</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.cli.pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process the Apache logs and populate the database with identities.</p>
+<p>This command will process the logs and print the output to STDOUT. The
+output format is CSV suitable for passing to PostGres&#8217;s COPY command.
+The field order is: status, country, url, referer, user_agent, datetime,
+document_id. Any requests which could not be processed due to malformed
+log entries will be logged to STDERR.</p>
+<p>IP addresses are converted to three letter country codes using the
+<a class="reference external" href="http://dev.maxmind.com/geoip/geoip2/geolite2/">GeoLite2 country database</a>. Make sure to use the
+binary format (<code class="docutils literal"><span class="pre">.mmdb</span></code>) and that it&#8217;s current; these are updated
+regularly. Pass the location of this file using the <code class="docutils literal"><span class="pre">--geo-ip</span></code> option.</p>
+<p>The pipeline can filter for log entries by date. Use the <code class="docutils literal"><span class="pre">--month/-m</span></code>
+option to specify a month to select. This can be repeated as many times
+as desired to collect more than one month of requests. The format should
+be the same as appears in the log entries, specifically, <code class="docutils literal"><span class="pre">MMM/YYYY</span></code>.
+If no month is provided all log entries will be processed.</p>
+<p>Identity data is collected from a custom Dspace identity bitstream. This
+can be specified using the <code class="docutils literal"><span class="pre">--dspace</span></code> option.</p>
+<p>The path to one or more log files should be passed as arguments to the
+pipeline. For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>
+(oastats)$ oastats pipeline -m Sep/2016 -m Oct/2016 \
+    --geo-ip data/GeoLite2.mmdb \
+    logs/2016/{09,10}/access.log 2&gt;errors.log | output.csv
+(oastats)$ psql -d database -c &quot;COPY requests (status, country, \
+    url, referer, user_agent, datetime, document_id) FROM STDIN \
+    WITH CSV&quot; &lt; output.csv
+</pre></div>
+</div>
+</dd></dl>
+
+<p>Full command documentation:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>(oastats)$ oastats pipeline --help
+</pre></div>
+</div>
+</div>
+<div class="section" id="generating-the-summary-collection">
+<h3>Generating the Summary Collection<a class="headerlink" href="#generating-the-summary-collection" title="Permalink to this headline">¶</a></h3>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p class="last">This subcommand will be removed once Mongo is no longer needed for the main OAStats website.</p>
+</div>
+<dl class="function">
+<dt id="pipeline.cli.summary">
+<code class="descclassname">pipeline.cli.</code><code class="descname">summary</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline.cli.summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the summary collection in Mongo.</p>
+<p>The current OAStats website uses a <code class="docutils literal"><span class="pre">summary</span></code> collection in Mongo which
+effectively functions as a pregenerated query cache. This command will
+generate and insert the necessary JSON objects into Mongo.</p>
+<p>Though not required, it is recommended to create a temporary summary
+collection in Mongo and rename it to <code class="docutils literal"><span class="pre">summary</span></code> once this command has
+finished. For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>
+(oastats)$ oastats summary --mongo-coll summary_new
+(oastats)$ mongo oastats --eval \
+    &#39;db.summary_new.renameCollection(&quot;summary&quot;, true)&#39;
+</pre></div>
+</div>
+</dd></dl>
+
+<p>Full command documentation:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>(oastats)$ oastats summary --help
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">OAStats Backend</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Mike Graves.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/index.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
