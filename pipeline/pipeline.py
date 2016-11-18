@@ -58,8 +58,8 @@ def get_alpha2_code(ip, database):
 
 
 def get_alpha3_code(alpha2):
-    country = pycountry.countries.get(alpha2=alpha2)
-    return country.alpha3
+    country = pycountry.countries.get(alpha_2=alpha2)
+    return country.alpha_3
 
 
 def to_iso_date(date):
