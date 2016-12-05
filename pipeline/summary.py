@@ -163,7 +163,7 @@ def handle(doc_id, conn):
     res = conn.execute(parents, doc_id=doc_id)
     for row in res:
         handle_obj.setdefault('parents', [])\
-            .append({'mit_id': row['mit_id'], 'name': row['name']})
+            .append({'mitid': row['mit_id'], 'name': row['name']})
     res = conn.execute(countries, doc_id=doc_id)
     for row in res:
         handle_obj.setdefault('countries', [])\
